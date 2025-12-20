@@ -1,0 +1,430 @@
+{
+  "name": "opencall",
+  "displayName": "OpenCall",
+  "description": "A VSCode extension for API testing and team collaboration with REST, gRPC, and OpenAPI support featuring peer-to-peer synchronization",
+  "version": "1.0.0",
+  "publisher": "opencall",
+  "author": {
+    "name": "OpenCall Team",
+    "email": "team@opencall.dev"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/opencall/opencall",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/opencall/opencall.git"
+  },
+  "bugs": {
+    "url": "https://github.com/opencall/opencall/issues"
+  },
+  "engines": {
+    "vscode": "^1.85.0",
+    "node": ">=18.0.0"
+  },
+  "categories": [
+    "Other",
+    "Snippets",
+    "Testing"
+  ],
+  "keywords": [
+    "api",
+    "rest",
+    "grpc",
+    "openapi",
+    "swagger",
+    "http",
+    "testing",
+    "debugging",
+    "postman",
+    "insomnia",
+    "p2p",
+    "collaboration",
+    "team",
+    "sync"
+  ],
+  "activationEvents": [
+    "onCommand:opencall.open",
+    "onCommand:opencall.createRequest",
+    "onCommand:opencall.importCollection",
+    "onView:opencall-explorer",
+    "onView:opencall-history",
+    "onLanguage:json",
+    "onWebviewPanel:opencall"
+  ],
+  "main": "./out/extension/extension.js",
+  "browser": "./out/webview/extension.js",
+  "icon": "assets/icon.png",
+  "contributes": {
+    "commands": [
+      {
+        "command": "opencall.open",
+        "title": "Open API Client",
+        "category": "OpenCall",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "opencall.createRequest",
+        "title": "Create New Request",
+        "category": "OpenCall",
+        "icon": "$(add)"
+      },
+      {
+        "command": "opencall.createCollection",
+        "title": "Create Collection",
+        "category": "OpenCall"
+      },
+      {
+        "command": "opencall.createEnvironment",
+        "title": "Create Environment",
+        "category": "OpenCall"
+      },
+      {
+        "command": "opencall.importCollection",
+        "title": "Import Collection",
+        "category": "OpenCall"
+      },
+      {
+        "command": "opencall.exportCollection",
+        "title": "Export Collection",
+        "category": "OpenCall"
+      },
+      {
+        "command": "opencall.startP2PSession",
+        "title": "Start P2P Session",
+        "category": "OpenCall"
+      },
+      {
+        "command": "opencall.joinP2PSession",
+        "title": "Join P2P Session",
+        "category": "OpenCall"
+      },
+      {
+        "command": "opencall.loadProtoFile",
+        "title": "Load Proto File",
+        "category": "OpenCall"
+      },
+      {
+        "command": "opencall.generateFromOpenAPI",
+        "title": "Generate from OpenAPI Spec",
+        "category": "OpenCall"
+      },
+      {
+        "command": "opencall.sendRequest",
+        "title": "Send Request",
+        "category": "OpenCall",
+        "icon": "$(play)"
+      },
+      {
+        "command": "opencall.refreshExplorer",
+        "title": "Refresh",
+        "category": "OpenCall",
+        "icon": "$(refresh)"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "opencall-explorer",
+          "name": "OpenCall",
+          "when": "opencall:enabled",
+          "icon": "assets/icons/api.svg",
+          "contextualTitle": "OpenCall"
+        }
+      ],
+      "opencall": [
+        {
+          "id": "opencall-history",
+          "name": "History",
+          "when": "opencall:enabled",
+          "icon": "$(history)"
+        },
+        {
+          "id": "opencall-p2p",
+          "name": "P2P Session",
+          "when": "opencall:p2p-enabled",
+          "icon": "$(output)"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "opencall",
+          "title": "OpenCall",
+          "icon": "assets/icons/activity-bar.svg"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "opencall.refreshExplorer",
+          "when": "view == opencall-explorer",
+          "group": "navigation"
+        },
+        {
+          "command": "opencall.createRequest",
+          "when": "view == opencall-explorer",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "opencall.sendRequest",
+          "when": "view == opencall-explorer && viewItem == request",
+          "group": "inline"
+        },
+        {
+          "command": "opencall.exportCollection",
+          "when": "view == opencall-explorer && viewItem == collection",
+          "group": "1_opencall"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "opencall.sendRequest",
+          "when": "false"
+        },
+        {
+          "command": "opencall.refreshExplorer",
+          "when": "false"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "opencall.open",
+        "key": "ctrl+shift+a",
+        "mac": "cmd+shift+a"
+      },
+      {
+        "command": "opencall.sendRequest",
+        "key": "ctrl+enter",
+        "mac": "cmd+enter",
+        "when": "activeWebviewPanel == 'opencall'"
+      }
+    ],
+    "configuration": {
+      "title": "OpenCall",
+      "properties": {
+        "opencall.general.theme": {
+          "type": "string",
+          "enum": ["auto", "light", "dark"],
+          "default": "auto",
+          "description": "UI theme for the OpenCall client",
+          "scope": "application"
+        },
+        "opencall.general.autoSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically save requests and collections",
+          "scope": "application"
+        },
+        "opencall.request.timeout": {
+          "type": "number",
+          "default": 30000,
+          "minimum": 1000,
+          "maximum": 300000,
+          "description": "Request timeout in milliseconds",
+          "scope": "application"
+        },
+        "opencall.request.followRedirects": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically follow HTTP redirects",
+          "scope": "application"
+        },
+        "opencall.request.maxRedirects": {
+          "type": "number",
+          "default": 10,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Maximum number of redirects to follow",
+          "scope": "application"
+        },
+        "opencall.request.validateSSL": {
+          "type": "boolean",
+          "default": true,
+          "description": "Validate SSL certificates",
+          "scope": "application"
+        },
+        "opencall.request.sendCookies": {
+          "type": "boolean",
+          "default": true,
+          "description": "Send cookies with requests",
+          "scope": "application"
+        },
+        "opencall.request.storeCookies": {
+          "type": "boolean",
+          "default": true,
+          "description": "Store cookies from responses",
+          "scope": "application"
+        },
+        "opencall.ui.sidebarWidth": {
+          "type": "number",
+          "default": 400,
+          "minimum": 200,
+          "maximum": 800,
+          "description": "Width of the sidebar in pixels",
+          "scope": "application"
+        },
+        "opencall.ui.responseViewMode": {
+          "type": "string",
+          "enum": ["pretty", "raw", "preview"],
+          "default": "pretty",
+          "description": "Default response view mode",
+          "scope": "application"
+        },
+        "opencall.ui.showLineNumbers": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show line numbers in code editors",
+          "scope": "application"
+        },
+        "opencall.p2p.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable peer-to-peer synchronization",
+          "scope": "application"
+        },
+        "opencall.p2p.autoConnect": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically connect to available peers",
+          "scope": "application"
+        },
+        "opencall.p2p.discoveryMethods": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["webrtc", "mdns", "direct"]
+          },
+          "default": ["webrtc", "mdns"],
+          "description": "Peer discovery methods",
+          "scope": "application"
+        },
+        "opencall.p2p.signalingServer": {
+          "type": "string",
+          "default": "",
+          "description": "Custom signaling server URL for WebRTC",
+          "scope": "application"
+        },
+        "opencall.security.encryptLocalData": {
+          "type": "boolean",
+          "default": true,
+          "description": "Encrypt sensitive local data",
+          "scope": "machine"
+        },
+        "opencall.security.sessionTimeout": {
+          "type": "number",
+          "default": 3600000,
+          "minimum": 60000,
+          "description": "Session timeout in milliseconds",
+          "scope": "machine"
+        },
+        "opencall.security.maskSecrets": {
+          "type": "boolean",
+          "default": true,
+          "description": "Mask secret values in the UI",
+          "scope": "application"
+        },
+        "opencall.performance.batchSize": {
+          "type": "number",
+          "default": 100,
+          "minimum": 10,
+          "maximum": 1000,
+          "description": "Batch size for bulk operations",
+          "scope": "application"
+        },
+        "opencall.performance.compressionEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable compression for P2P sync",
+          "scope": "application"
+        },
+        "opencall.performance.deltaSyncEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable delta synchronization for P2P",
+          "scope": "application"
+        }
+      }
+    },
+    "grammars": [],
+    "snippets": [],
+    "languages": []
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix",
+    "test": "node ./out/test/runTest.js",
+    "test:watch": "node --inspect=5858 ./out/test/runTest.js",
+    "build": "npm run build:extension && npm run build:webview",
+    "build:extension": "esbuild src/extension/extension.ts --bundle --platform=node --external:vscode --outfile=out/extension.js --format=cjs --sourcemap",
+    "build:webview": "webpack --config webpack.config.js --mode production",
+    "build:dev": "npm run build:extension && webpack --config webpack.config.js --mode development",
+    "dev:webview": "webpack serve --config webpack.config.js --mode development",
+    "package": "vsce package --out opencall.vsix",
+    "publish": "vsce publish",
+    "clean": "rimraf out dist",
+    "postinstall": "cd webview && npm install"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.2",
+    "@typescript-eslint/parser": "^6.13.2",
+    "@vscode/test-electron": "^2.3.9",
+    "esbuild": "^0.19.10",
+    "eslint": "^8.55.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3",
+    "vsce": "^2.22.0",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
+  },
+  "dependencies": {
+    "simple-peer": "^9.11.1",
+    "protobufjs": "^7.2.5",
+    "@grpc/grpc-js": "^1.9.12",
+    "axios": "^1.6.2",
+    "follow-redirects": "^1.15.4",
+    "form-data": "^4.0.0",
+    "crypto-js": "^4.2.0",
+    "uuid": "^9.0.1",
+    "lodash": "^4.17.21",
+    "eventemitter3": "^5.0.1",
+    "dexie": "^3.2.4",
+    "dayjs": "^1.11.10",
+    "semver": "^7.5.4",
+    "js-yaml": "^4.1.0",
+    "openapi-types": "^12.1.3",
+    "ajv": "^8.12.0",
+    "markdown-it": "^13.0.2",
+    "highlight.js": "^11.9.0"
+  },
+  "extensionKind": [
+    "ui",
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Network requests are disabled in untrusted workspaces"
+    }
+  },
+  "qna": "https://github.com/opencall/opencall/discussions",
+  "marketing": {
+    "message": "Team collaboration through peer-to-peer API testing!",
+    "signature": "OpenCall Team"
+  }
+}
