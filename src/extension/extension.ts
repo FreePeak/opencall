@@ -3,6 +3,7 @@ import { logger } from '../utils/logger';
 import { COMMANDS, VIEWS, CONTEXT_KEYS } from '../utils/constants';
 import { getConfigurationManager, disposeConfigurationManager } from '../core/configuration-manager';
 import { initDatabase, closeDatabase } from '../storage/database';
+import { getExportImportService } from './export-import-service';
 
 let extensionContext: vscode.ExtensionContext | null = null;
 
@@ -144,12 +145,20 @@ async function handleDeleteCollection(collectionId: string): Promise<void> {
 
 async function handleExportCollection(collectionId?: string): Promise<void> {
   logger.info(`Exporting collection: ${collectionId || 'selected'}`);
-  vscode.window.showInformationMessage('Export collection will be implemented in Phase 3');
+  const exportImportService = getExportImportService();
+
+  if (collectionId) {
+    await exportImportService.exportCollection(collectionId);
+  } else {
+    // Export all collections if no specific ID provided
+    await exportImportService.exportAll();
+  }
 }
 
 async function handleImportCollection(): Promise<void> {
   logger.info('Importing collection');
-  vscode.window.showInformationMessage('Import collection will be implemented in Phase 3');
+  const exportImportService = getExportImportService();
+  await exportImportService.importCollection();
 }
 
 // Command handlers - Environments
