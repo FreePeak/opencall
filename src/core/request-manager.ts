@@ -230,12 +230,8 @@ export class RequestManager {
 
   private async saveRequest(request: Request): Promise<void> {
     try {
-      // Save to VSCode workspace state or extension storage
-      const context = vscode.extensions.getExtension('opencall.opencall')?.extensionContext;
-      if (context) {
-        const requests = this.getAllRequests();
-        await context.globalState.update('opencall.requests', requests);
-      }
+      // TODO: Implement with storage layer
+      logger.debug('saveRequest: will be implemented with storage layer');
     } catch (error) {
       logger.error('Failed to save request', error);
     }
@@ -243,11 +239,8 @@ export class RequestManager {
 
   private async deleteRequestData(requestId: string): Promise<void> {
     try {
-      const context = vscode.extensions.getExtension('opencall.opencall')?.extensionContext;
-      if (context) {
-        const requests = this.getAllRequests().filter(r => r.id !== requestId);
-        await context.globalState.update('opencall.requests', requests);
-      }
+      // TODO: Implement with storage layer
+      logger.debug('deleteRequestData: will be implemented with storage layer');
     } catch (error) {
       logger.error('Failed to delete request data', error);
     }
@@ -255,16 +248,8 @@ export class RequestManager {
 
   async loadRequests(): Promise<void> {
     try {
-      const context = vscode.extensions.getExtension('opencall.opencall')?.extensionContext;
-      if (context) {
-        const requests = context.globalState.get<Request[]>('opencall.requests', []);
-        this.requests.clear();
-        requests.forEach(request => {
-          this.requests.set(request.id, request);
-        });
-
-        logger.info(`Loaded ${requests.length} requests from storage`);
-      }
+      // TODO: Implement with storage layer
+      logger.debug('loadRequests: will be implemented with storage layer');
     } catch (error) {
       logger.error('Failed to load requests', error);
     }

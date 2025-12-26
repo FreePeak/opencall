@@ -98,7 +98,7 @@ export const THEMES = {
 
 export const DEFAULT_CONFIG = {
   general: {
-    theme: THEMES.AUTO as const,
+    theme: 'auto' as 'auto' | 'light' | 'dark',
     autoSave: true,
   },
   request: {
@@ -111,7 +111,7 @@ export const DEFAULT_CONFIG = {
   },
   ui: {
     sidebarWidth: 400,
-    responseViewMode: RESPONSE_VIEW_MODES.PRETTY as const,
+    responseViewMode: 'pretty' as 'pretty' | 'raw' | 'preview',
     showLineNumbers: true,
   },
   p2p: {

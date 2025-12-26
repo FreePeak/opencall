@@ -393,7 +393,7 @@ export class EnvironmentManager {
     const variables: EnvironmentVariable[] = data.values.map(v => ({
       key: v.key,
       value: v.value,
-      type: v.type || 'string',
+      type: (v.type || 'string') as 'string' | 'number' | 'boolean' | 'json',
       description: v.description,
       enabled: v.enabled !== false,
       secret: false
@@ -404,12 +404,8 @@ export class EnvironmentManager {
 
   private async saveEnvironment(environment: Environment): Promise<void> {
     try {
-      const context = vscode.extensions.getExtension('opencall.opencall')?.extensionContext;
-      if (context) {
-        const environments = this.getAllEnvironments();
-        await context.globalState.update('opencall.environments', environments);
-        await context.globalState.update('opencall.activeEnvironment', this.activeEnvironmentId);
-      }
+      // TODO: Implement with storage layer
+      logger.debug('saveEnvironment: will be implemented with storage layer');
     } catch (error) {
       logger.error('Failed to save environment', error);
     }
@@ -417,11 +413,8 @@ export class EnvironmentManager {
 
   private async deleteEnvironmentData(environmentId: string): Promise<void> {
     try {
-      const context = vscode.extensions.getExtension('opencall.opencall')?.extensionContext;
-      if (context) {
-        const environments = this.getAllEnvironments().filter(e => e.id !== environmentId);
-        await context.globalState.update('opencall.environments', environments);
-      }
+      // TODO: Implement with storage layer
+      logger.debug('deleteEnvironmentData: will be implemented with storage layer');
     } catch (error) {
       logger.error('Failed to delete environment data', error);
     }
@@ -429,20 +422,8 @@ export class EnvironmentManager {
 
   async loadEnvironments(): Promise<void> {
     try {
-      const context = vscode.extensions.getExtension('opencall.opencall')?.extensionContext;
-      if (context) {
-        const environments = context.globalState.get<Environment[]>('opencall.environments', []);
-        this.environments.clear();
-
-        for (const environment of environments) {
-          this.environments.set(environment.id, environment);
-          if (environment.isActive) {
-            this.activeEnvironmentId = environment.id;
-          }
-        }
-
-        logger.info(`Loaded ${environments.length} environments from storage`);
-      }
+      // TODO: Implement with storage layer
+      logger.debug('loadEnvironments: will be implemented with storage layer');
     } catch (error) {
       logger.error('Failed to load environments', error);
     }

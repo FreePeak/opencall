@@ -17,11 +17,11 @@ export interface SubstitutionOptions {
 
 export interface SubstitutionResult {
   result: string;
-  substitutions: VariableSubstitution[];
+  substitutions: VariableSubstitutionItem[];
   errors: SubstitutionError[];
 }
 
-export interface VariableSubstitution {
+export interface VariableSubstitutionItem {
   original: string;
   variable: string;
   value: string;
@@ -69,7 +69,7 @@ export class VariableSubstitution {
     input: string,
     context: SubstitutionContext
   ): SubstitutionResult {
-    const substitutions: VariableSubstitution[] = [];
+    const substitutions: VariableSubstitutionItem[] = [];
     const errors: SubstitutionError[] = [];
     let result = input;
     let depth = 0;
@@ -154,7 +154,7 @@ export class VariableSubstitution {
     input: any,
     context: SubstitutionContext
   ): SubstitutionResult {
-    const allSubstitutions: VariableSubstitution[] = [];
+    const allSubstitutions: VariableSubstitutionItem[] = [];
     const allErrors: SubstitutionError[] = [];
 
     const substituteValue = (value: any, path: string = ''): any => {

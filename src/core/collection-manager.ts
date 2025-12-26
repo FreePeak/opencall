@@ -261,13 +261,13 @@ export class CollectionManager {
   }
 
   getCollectionHierarchy(): CollectionTree {
-    const buildTree = (collections: Collection[]): CollectionTree[] => {
+    const buildTree = (collections: Collection[]): CollectionTreeItem[] => {
       return collections.map(collection => ({
         ...collection,
         children: collection.items.filter(item => 'items' in item).length > 0
           ? buildTree(collection.items.filter(item => 'items' in item) as Collection[])
           : undefined
-      }));
+      })) as CollectionTreeItem[];
     };
 
     return {
@@ -310,11 +310,8 @@ export class CollectionManager {
 
   private async saveCollection(collection: Collection): Promise<void> {
     try {
-      const context = vscode.extensions.getExtension('opencall.opencall')?.extensionContext;
-      if (context) {
-        const collections = this.getAllCollections();
-        await context.globalState.update('opencall.collections', collections);
-      }
+      // TODO: Implement with storage layer
+      logger.debug('saveCollection: will be implemented with storage layer');
     } catch (error) {
       logger.error('Failed to save collection', error);
     }
@@ -322,11 +319,8 @@ export class CollectionManager {
 
   private async deleteCollectionData(collectionId: string): Promise<void> {
     try {
-      const context = vscode.extensions.getExtension('opencall.opencall')?.extensionContext;
-      if (context) {
-        const collections = this.getAllCollections().filter(c => c.id !== collectionId);
-        await context.globalState.update('opencall.collections', collections);
-      }
+      // TODO: Implement with storage layer
+      logger.debug('deleteCollectionData: will be implemented with storage layer');
     } catch (error) {
       logger.error('Failed to delete collection data', error);
     }
@@ -334,21 +328,8 @@ export class CollectionManager {
 
   async loadCollections(): Promise<void> {
     try {
-      const context = vscode.extensions.getExtension('opencall.opencall')?.extensionContext;
-      if (context) {
-        const collections = context.globalState.get<Collection[]>('opencall.collections', []);
-        this.collections.clear();
-        this.rootCollections = [];
-
-        for (const collection of collections) {
-          this.collections.set(collection.id, collection);
-          if (!collection.parentId) {
-            this.rootCollections.push(collection.id);
-          }
-        }
-
-        logger.info(`Loaded ${collections.length} collections from storage`);
-      }
+      // TODO: Implement with storage layer
+      logger.debug('loadCollections: will be implemented with storage layer');
     } catch (error) {
       logger.error('Failed to load collections', error);
     }

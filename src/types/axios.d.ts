@@ -1,0 +1,17 @@
+import 'axios';
+
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    metadata?: {
+      startTime: number;
+      endTime?: number;
+    };
+  }
+
+  export interface InternalAxiosRequestConfig {
+    metadata?: {
+      startTime: number;
+      endTime?: number;
+    };
+  }
+}

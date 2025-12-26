@@ -78,7 +78,7 @@ export function throttle<T extends (...args: any[]) => any>(
 ): (...args: Parameters<T>) => void {
   let inThrottle: boolean;
 
-  return function executedFunction(...args: Parameters<T>) {
+  return function(this: any, ...args: Parameters<T>) {
     if (!inThrottle) {
       func.apply(this, args);
       inThrottle = true;
@@ -232,26 +232,26 @@ export async function showWarningMessage(
   message: string,
   ...actions: string[]
 ): Promise<string | undefined> {
-  return await vscode.window.showWarningMessage(message, ...actions);
+  return Promise.resolve(vscode.window.showWarningMessage(message, ...actions));
 }
 
 export async function showInformationMessage(
   message: string,
   ...actions: string[]
 ): Promise<string | undefined> {
-  return await vscode.window.showInformationMessage(message, ...actions);
+  return Promise.resolve(vscode.window.showInformationMessage(message, ...actions));
 }
 
 export function withProgress<T>(
   title: string,
   task: (progress: vscode.Progress<{ message?: string; increment?: number }>) => Promise<T>
 ): Promise<T> {
-  return vscode.window.withProgress(
+  return Promise.resolve(vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
       title,
       cancellable: false,
     },
     task
-  );
+  ));
 }
