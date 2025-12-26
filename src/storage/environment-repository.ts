@@ -1,25 +1,35 @@
 import { Environment } from '../types';
-import { getDatabase } from './database';
+import { getDatabase, serializeEnvironment, deserializeEnvironment } from './database';
 import { logger } from '../utils/logger';
 
 /**
  * Environment Repository
- * Handles CRUD operations for environments
+ * Handles CRUD operations for environments using SQLite
  */
 export class EnvironmentRepository {
-  private db = getDatabase();
-
   /**
    * Create a new environment
    */
   async create(environment: Environment): Promise<Environment> {
     try {
+      const db = getDatabase().getRawDB();
+
       // If this is set as active, deactivate all others
       if (environment.isActive) {
         await this.deactivateAll();
       }
 
-      await this.db.environments.add(environment);
+      const serialized = serializeEnvironment(environment);
+      const stmt = db.prepare(`
+        INSERT INTO environments (id, name, variables, isActive, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+
+      stmt.run(
+        serialized.id, serialized.name, serialized.variables,
+        serialized.isActive, serialized.createdAt, serialized.updatedAt
+      );
+
       logger.info(`[EnvironmentRepo] Created environment: ${environment.id}`);
       return environment;
     } catch (error) {
@@ -50,7 +60,7 @@ export class EnvironmentRepository {
         updatedAt: new Date(),
       };
 
-      await this.db.environments.put(updated);
+      await this.create(updated); // UPSERT
       logger.info(`[EnvironmentRepo] Updated environment: ${id}`);
       return updated;
     } catch (error) {
@@ -64,7 +74,9 @@ export class EnvironmentRepository {
    */
   async delete(id: string): Promise<void> {
     try {
-      await this.db.environments.delete(id);
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('DELETE FROM environments WHERE id = ?');
+      stmt.run(id);
       logger.info(`[EnvironmentRepo] Deleted environment: ${id}`);
     } catch (error) {
       logger.error(`[EnvironmentRepo] Failed to delete environment: ${id}`, error);
@@ -77,8 +89,11 @@ export class EnvironmentRepository {
    */
   async getById(id: string): Promise<Environment | null> {
     try {
-      const environment = await this.db.environments.get(id);
-      return environment || null;
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT * FROM environments WHERE id = ?');
+      const row = stmt.get(id) as any;
+
+      return row ? deserializeEnvironment(row) : null;
     } catch (error) {
       logger.error(`[EnvironmentRepo] Failed to get environment: ${id}`, error);
       throw error;
@@ -90,8 +105,11 @@ export class EnvironmentRepository {
    */
   async getByName(name: string): Promise<Environment | null> {
     try {
-      const environment = await this.db.environments.where('name').equals(name).first();
-      return environment || null;
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT * FROM environments WHERE name = ?');
+      const row = stmt.get(name) as any;
+
+      return row ? deserializeEnvironment(row) : null;
     } catch (error) {
       logger.error(`[EnvironmentRepo] Failed to get environment by name: ${name}`, error);
       throw error;
@@ -103,8 +121,11 @@ export class EnvironmentRepository {
    */
   async getAll(): Promise<Environment[]> {
     try {
-      const environments = await this.db.environments.toArray();
-      return environments;
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT * FROM environments');
+      const rows = stmt.all() as any[];
+
+      return rows.map(deserializeEnvironment);
     } catch (error) {
       logger.error('[EnvironmentRepo] Failed to get all environments', error);
       throw error;
@@ -116,9 +137,11 @@ export class EnvironmentRepository {
    */
   async getActive(): Promise<Environment | null> {
     try {
-      const allEnvironments = await this.db.environments.toArray();
-      const activeEnvironment = allEnvironments.find((env) => env.isActive);
-      return activeEnvironment || null;
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT * FROM environments WHERE isActive = 1');
+      const row = stmt.get() as any;
+
+      return row ? deserializeEnvironment(row) : null;
     } catch (error) {
       logger.error('[EnvironmentRepo] Failed to get active environment', error);
       throw error;
@@ -131,10 +154,6 @@ export class EnvironmentRepository {
    */
   async setActive(id: string): Promise<void> {
     try {
-      // First, deactivate all environments
-      await this.deactivateAll();
-
-      // Then, activate the requested environment
       await this.update(id, { isActive: true });
       logger.info(`[EnvironmentRepo] Set active environment: ${id}`);
     } catch (error) {
@@ -148,18 +167,9 @@ export class EnvironmentRepository {
    */
   private async deactivateAll(): Promise<void> {
     try {
-      const allEnvironments = await this.getAll();
-      const updates = allEnvironments
-        .filter((env) => env.isActive)
-        .map((env) => ({
-          ...env,
-          isActive: false,
-          updatedAt: new Date(),
-        }));
-
-      if (updates.length > 0) {
-        await this.db.environments.bulkPut(updates);
-      }
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('UPDATE environments SET isActive = 0');
+      stmt.run();
     } catch (error) {
       logger.error('[EnvironmentRepo] Failed to deactivate all environments', error);
       throw error;
@@ -171,11 +181,11 @@ export class EnvironmentRepository {
    */
   async searchByName(query: string): Promise<Environment[]> {
     try {
-      const allEnvironments = await this.getAll();
-      const lowerQuery = query.toLowerCase();
-      return allEnvironments.filter((env) =>
-        env.name.toLowerCase().includes(lowerQuery)
-      );
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT * FROM environments WHERE name LIKE ?');
+      const rows = stmt.all(`%${query}%`) as any[];
+
+      return rows.map(deserializeEnvironment);
     } catch (error) {
       logger.error(`[EnvironmentRepo] Failed to search environments: ${query}`, error);
       throw error;
@@ -205,7 +215,23 @@ export class EnvironmentRepository {
    */
   async bulkCreate(environments: Environment[]): Promise<Environment[]> {
     try {
-      await this.db.environments.bulkAdd(environments);
+      const db = getDatabase().getRawDB();
+      const insertStmt = db.prepare(`
+        INSERT INTO environments (id, name, variables, isActive, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+
+      const transaction = db.transaction(() => {
+        for (const env of environments) {
+          const serialized = serializeEnvironment(env);
+          insertStmt.run(
+            serialized.id, serialized.name, serialized.variables,
+            serialized.isActive, serialized.createdAt, serialized.updatedAt
+          );
+        }
+      });
+
+      transaction();
       logger.info(`[EnvironmentRepo] Bulk created ${environments.length} environments`);
       return environments;
     } catch (error) {
@@ -219,20 +245,33 @@ export class EnvironmentRepository {
    */
   async bulkUpdate(updates: Array<{ id: string; changes: Partial<Environment> }>): Promise<void> {
     try {
-      const transactions = updates.map(async ({ id, changes }) => {
-        const existing = await this.getById(id);
-        if (existing) {
+      const db = getDatabase().getRawDB();
+      const updateStmt = db.prepare(`
+        UPDATE environments SET name = ?, variables = ?, isActive = ?, updatedAt = ?
+        WHERE id = ?
+      `);
+
+      const transaction = db.transaction(async () => {
+        for (const { id, changes } of updates) {
+          const existing = await this.getById(id);
+          if (!existing) continue;
+
           const updated: Environment = {
             ...existing,
             ...changes,
             id,
             updatedAt: new Date(),
           };
-          await this.db.environments.put(updated);
+          const serialized = serializeEnvironment(updated);
+
+          updateStmt.run(
+            serialized.name, serialized.variables, serialized.isActive,
+            serialized.updatedAt, serialized.id
+          );
         }
       });
 
-      await Promise.all(transactions);
+      transaction();
       logger.info(`[EnvironmentRepo] Bulk updated ${updates.length} environments`);
     } catch (error) {
       logger.error('[EnvironmentRepo] Failed to bulk update environments', error);
@@ -245,7 +284,16 @@ export class EnvironmentRepository {
    */
   async bulkDelete(ids: string[]): Promise<void> {
     try {
-      await this.db.environments.bulkDelete(ids);
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('DELETE FROM environments WHERE id = ?');
+
+      const transaction = db.transaction(() => {
+        for (const id of ids) {
+          stmt.run(id);
+        }
+      });
+
+      transaction();
       logger.info(`[EnvironmentRepo] Bulk deleted ${ids.length} environments`);
     } catch (error) {
       logger.error('[EnvironmentRepo] Failed to bulk delete environments', error);
@@ -258,7 +306,10 @@ export class EnvironmentRepository {
    */
   async count(): Promise<number> {
     try {
-      return await this.db.environments.count();
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT COUNT(*) as count FROM environments');
+      const result = stmt.get() as { count: number };
+      return result.count;
     } catch (error) {
       logger.error('[EnvironmentRepo] Failed to count environments', error);
       throw error;

@@ -1,5 +1,6 @@
 import { Collection, Request } from '../types';
-import { getDatabase } from './database';
+import { getDatabase, serializeCollection, deserializeCollection } from './database';
+import { getRequestRepository } from './request-repository';
 import { logger } from '../utils/logger';
 
 /**
@@ -10,17 +11,29 @@ export type CollectionItem = Collection | Request;
 
 /**
  * Collection Repository
- * Handles CRUD operations for collections and folders
+ * Handles CRUD operations for collections and folders using SQLite
  */
 export class CollectionRepository {
-  private db = getDatabase();
-
   /**
    * Create a new collection or folder
    */
   async create(collection: Collection): Promise<Collection> {
     try {
-      await this.db.collections.add(collection);
+      const db = getDatabase().getRawDB();
+      const serialized = serializeCollection(collection);
+
+      const stmt = db.prepare(`
+        INSERT INTO collections
+        (id, name, description, parentId, items, auth, variables, scripts, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      stmt.run(
+        serialized.id, serialized.name, serialized.description, serialized.parentId,
+        serialized.items, serialized.auth, serialized.variables, serialized.scripts,
+        serialized.createdAt, serialized.updatedAt
+      );
+
       logger.info(`[CollectionRepo] Created collection: ${collection.id}`);
       return collection;
     } catch (error) {
@@ -46,7 +59,7 @@ export class CollectionRepository {
         updatedAt: new Date(),
       };
 
-      await this.db.collections.put(updated);
+      await this.create(updated); // UPSERT
       logger.info(`[CollectionRepo] Updated collection: ${id}`);
       return updated;
     } catch (error) {
@@ -57,23 +70,23 @@ export class CollectionRepository {
 
   /**
    * Delete a collection
-   * Also deletes all child collections and requests
+   * Also deletes all child collections recursively
+   * Note: Requests in deleted collections need to be handled separately
    */
   async delete(id: string): Promise<void> {
     try {
-      // First, get all children
-      const children = await this.getChildren(id);
+      const db = getDatabase().getRawDB();
 
-      // Recursively delete all children
+      // First, recursively delete all children
+      const children = await this.getByParent(id);
       for (const child of children) {
-        if ('items' in child) {
-          // It's a collection/folder
-          await this.delete(child.id);
-        }
+        await this.delete(child.id);
       }
 
       // Delete the collection itself
-      await this.db.collections.delete(id);
+      const stmt = db.prepare('DELETE FROM collections WHERE id = ?');
+      stmt.run(id);
+
       logger.info(`[CollectionRepo] Deleted collection: ${id}`);
     } catch (error) {
       logger.error(`[CollectionRepo] Failed to delete collection: ${id}`, error);
@@ -86,8 +99,11 @@ export class CollectionRepository {
    */
   async getById(id: string): Promise<Collection | null> {
     try {
-      const collection = await this.db.collections.get(id);
-      return collection || null;
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT * FROM collections WHERE id = ?');
+      const row = stmt.get(id) as any;
+
+      return row ? deserializeCollection(row) : null;
     } catch (error) {
       logger.error(`[CollectionRepo] Failed to get collection: ${id}`, error);
       throw error;
@@ -99,8 +115,11 @@ export class CollectionRepository {
    */
   async getAll(): Promise<Collection[]> {
     try {
-      const collections = await this.db.collections.toArray();
-      return collections;
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT * FROM collections');
+      const rows = stmt.all() as any[];
+
+      return rows.map(deserializeCollection);
     } catch (error) {
       logger.error('[CollectionRepo] Failed to get all collections', error);
       throw error;
@@ -112,11 +131,14 @@ export class CollectionRepository {
    */
   async getRootCollections(): Promise<Collection[]> {
     try {
-      const allCollections = await this.db.collections.toArray();
-      const rootCollections = allCollections.filter(
-        (col) => !col.parentId || col.parentId === ''
-      );
-      return rootCollections;
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare(`
+        SELECT * FROM collections
+        WHERE parentId IS NULL OR parentId = ''
+      `);
+      const rows = stmt.all() as any[];
+
+      return rows.map(deserializeCollection);
     } catch (error) {
       logger.error('[CollectionRepo] Failed to get root collections', error);
       throw error;
@@ -124,18 +146,28 @@ export class CollectionRepository {
   }
 
   /**
-   * Get children of a collection (collections and requests)
+   * Get children of a parent collection
+   */
+  async getByParent(parentId?: string): Promise<Collection[]> {
+    try {
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT * FROM collections WHERE parentId = ?');
+      const rows = stmt.all(parentId || '') as any[];
+
+      return rows.map(deserializeCollection);
+    } catch (error) {
+      logger.error(`[CollectionRepo] Failed to get children for: ${parentId || 'root'}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get children of a collection (collections only for now)
+   * TODO: Include requests when request repository is integrated
    */
   async getChildren(parentId?: string): Promise<CollectionItem[]> {
     try {
-      // Get child collections
-      const collections = parentId
-        ? await this.db.collections.where('parentId').equals(parentId).toArray()
-        : await this.getRootCollections();
-
-      // Get requests in this collection/folder
-      // Note: Requests are stored separately, we'll need to query from the request repository
-      // For now, return only collections
+      const collections = await this.getByParent(parentId);
       return collections as CollectionItem[];
     } catch (error) {
       logger.error(`[CollectionRepo] Failed to get children for: ${parentId || 'root'}`, error);
@@ -184,11 +216,11 @@ export class CollectionRepository {
    */
   async searchByName(query: string): Promise<Collection[]> {
     try {
-      const allCollections = await this.getAll();
-      const lowerQuery = query.toLowerCase();
-      return allCollections.filter((col) =>
-        col.name.toLowerCase().includes(lowerQuery)
-      );
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT * FROM collections WHERE name LIKE ?');
+      const rows = stmt.all(`%${query}%`) as any[];
+
+      return rows.map(deserializeCollection);
     } catch (error) {
       logger.error(`[CollectionRepo] Failed to search collections: ${query}`, error);
       throw error;
@@ -213,7 +245,25 @@ export class CollectionRepository {
    */
   async bulkCreate(collections: Collection[]): Promise<Collection[]> {
     try {
-      await this.db.collections.bulkAdd(collections);
+      const db = getDatabase().getRawDB();
+      const insertStmt = db.prepare(`
+        INSERT INTO collections
+        (id, name, description, parentId, items, auth, variables, scripts, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      const transaction = db.transaction(() => {
+        for (const col of collections) {
+          const serialized = serializeCollection(col);
+          insertStmt.run(
+            serialized.id, serialized.name, serialized.description, serialized.parentId,
+            serialized.items, serialized.auth, serialized.variables, serialized.scripts,
+            serialized.createdAt, serialized.updatedAt
+          );
+        }
+      });
+
+      transaction();
       logger.info(`[CollectionRepo] Bulk created ${collections.length} collections`);
       return collections;
     } catch (error) {
@@ -227,20 +277,36 @@ export class CollectionRepository {
    */
   async bulkUpdate(updates: Array<{ id: string; changes: Partial<Collection> }>): Promise<void> {
     try {
-      const transactions = updates.map(async ({ id, changes }) => {
-        const existing = await this.getById(id);
-        if (existing) {
+      const db = getDatabase().getRawDB();
+      const updateStmt = db.prepare(`
+        UPDATE collections SET
+          name = ?, description = ?, parentId = ?, items = ?, auth = ?,
+          variables = ?, scripts = ?, updatedAt = ?
+        WHERE id = ?
+      `);
+
+      const transaction = db.transaction(async () => {
+        for (const { id, changes } of updates) {
+          const existing = await this.getById(id);
+          if (!existing) continue;
+
           const updated: Collection = {
             ...existing,
             ...changes,
             id,
             updatedAt: new Date(),
           };
-          await this.db.collections.put(updated);
+          const serialized = serializeCollection(updated);
+
+          updateStmt.run(
+            serialized.name, serialized.description, serialized.parentId,
+            serialized.items, serialized.auth, serialized.variables,
+            serialized.scripts, serialized.updatedAt, serialized.id
+          );
         }
       });
 
-      await Promise.all(transactions);
+      transaction();
       logger.info(`[CollectionRepo] Bulk updated ${updates.length} collections`);
     } catch (error) {
       logger.error('[CollectionRepo] Failed to bulk update collections', error);
@@ -253,7 +319,16 @@ export class CollectionRepository {
    */
   async bulkDelete(ids: string[]): Promise<void> {
     try {
-      await this.db.collections.bulkDelete(ids);
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('DELETE FROM collections WHERE id = ?');
+
+      const transaction = db.transaction(() => {
+        for (const id of ids) {
+          stmt.run(id);
+        }
+      });
+
+      transaction();
       logger.info(`[CollectionRepo] Bulk deleted ${ids.length} collections`);
     } catch (error) {
       logger.error('[CollectionRepo] Failed to bulk delete collections', error);
@@ -266,7 +341,10 @@ export class CollectionRepository {
    */
   async count(): Promise<number> {
     try {
-      return await this.db.collections.count();
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT COUNT(*) as count FROM collections');
+      const result = stmt.get() as { count: number };
+      return result.count;
     } catch (error) {
       logger.error('[CollectionRepo] Failed to count collections', error);
       throw error;

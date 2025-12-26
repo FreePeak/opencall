@@ -1,20 +1,34 @@
 import { Request } from '../types';
-import { getDatabase } from './database';
+import { getDatabase, serializeRequest, deserializeRequest } from './database';
 import { logger } from '../utils/logger';
 
 /**
  * Request Repository
- * Handles CRUD operations for API requests
+ * Handles CRUD operations for API requests using SQLite
  */
 export class RequestRepository {
-  private db = getDatabase();
-
   /**
    * Create a new request
    */
   async create(request: Request): Promise<Request> {
     try {
-      await this.db.requests.add(request);
+      const db = getDatabase().getRawDB();
+      const serialized = serializeRequest(request);
+
+      const stmt = db.prepare(`
+        INSERT INTO requests
+        (id, name, description, method, url, headers, body, auth, tests,
+         collectionId, folderId, tags, createdAt, updatedAt, lastSentAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      stmt.run(
+        serialized.id, serialized.name, serialized.description, serialized.method,
+        serialized.url, serialized.headers, serialized.body, serialized.auth,
+        serialized.tests, serialized.collectionId, serialized.folderId, serialized.tags,
+        serialized.createdAt, serialized.updatedAt, serialized.lastSentAt
+      );
+
       logger.info(`[RequestRepo] Created request: ${request.id}`);
       return request;
     } catch (error) {
@@ -40,7 +54,7 @@ export class RequestRepository {
         updatedAt: new Date(),
       };
 
-      await this.db.requests.put(updated);
+      await this.create(updated); // UPSERT
       logger.info(`[RequestRepo] Updated request: ${id}`);
       return updated;
     } catch (error) {
@@ -54,7 +68,9 @@ export class RequestRepository {
    */
   async delete(id: string): Promise<void> {
     try {
-      await this.db.requests.delete(id);
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('DELETE FROM requests WHERE id = ?');
+      stmt.run(id);
       logger.info(`[RequestRepo] Deleted request: ${id}`);
     } catch (error) {
       logger.error(`[RequestRepo] Failed to delete request: ${id}`, error);
@@ -67,8 +83,11 @@ export class RequestRepository {
    */
   async getById(id: string): Promise<Request | null> {
     try {
-      const request = await this.db.requests.get(id);
-      return request || null;
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT * FROM requests WHERE id = ?');
+      const row = stmt.get(id) as any;
+
+      return row ? deserializeRequest(row) : null;
     } catch (error) {
       logger.error(`[RequestRepo] Failed to get request: ${id}`, error);
       throw error;
@@ -80,8 +99,11 @@ export class RequestRepository {
    */
   async getAll(): Promise<Request[]> {
     try {
-      const requests = await this.db.requests.toArray();
-      return requests;
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT * FROM requests');
+      const rows = stmt.all() as any[];
+
+      return rows.map(deserializeRequest);
     } catch (error) {
       logger.error('[RequestRepo] Failed to get all requests', error);
       throw error;
@@ -93,11 +115,11 @@ export class RequestRepository {
    */
   async getByCollection(collectionId: string): Promise<Request[]> {
     try {
-      const requests = await this.db.requests
-        .where('collectionId')
-        .equals(collectionId)
-        .toArray();
-      return requests;
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT * FROM requests WHERE collectionId = ?');
+      const rows = stmt.all(collectionId) as any[];
+
+      return rows.map(deserializeRequest);
     } catch (error) {
       logger.error(`[RequestRepo] Failed to get requests for collection: ${collectionId}`, error);
       throw error;
@@ -109,11 +131,11 @@ export class RequestRepository {
    */
   async getByFolder(folderId: string): Promise<Request[]> {
     try {
-      const requests = await this.db.requests
-        .where('folderId')
-        .equals(folderId)
-        .toArray();
-      return requests;
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT * FROM requests WHERE folderId = ?');
+      const rows = stmt.all(folderId) as any[];
+
+      return rows.map(deserializeRequest);
     } catch (error) {
       logger.error(`[RequestRepo] Failed to get requests for folder: ${folderId}`, error);
       throw error;
@@ -125,11 +147,11 @@ export class RequestRepository {
    */
   async searchByName(query: string): Promise<Request[]> {
     try {
-      const allRequests = await this.getAll();
-      const lowerQuery = query.toLowerCase();
-      return allRequests.filter((req) =>
-        req.name.toLowerCase().includes(lowerQuery)
-      );
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT * FROM requests WHERE name LIKE ?');
+      const rows = stmt.all(`%${query}%`) as any[];
+
+      return rows.map(deserializeRequest);
     } catch (error) {
       logger.error(`[RequestRepo] Failed to search requests: ${query}`, error);
       throw error;
@@ -141,13 +163,16 @@ export class RequestRepository {
    */
   async getRecent(limit: number = 10): Promise<Request[]> {
     try {
-      const requests = await this.db.requests
-        .orderBy('lastSentAt')
-        .reverse()
-        .filter((req) => req.lastSentAt !== undefined)
-        .limit(limit)
-        .toArray();
-      return requests;
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare(`
+        SELECT * FROM requests
+        WHERE lastSentAt IS NOT NULL
+        ORDER BY lastSentAt DESC
+        LIMIT ?
+      `);
+      const rows = stmt.all(limit) as any[];
+
+      return rows.map(deserializeRequest);
     } catch (error) {
       logger.error('[RequestRepo] Failed to get recent requests', error);
       throw error;
@@ -159,7 +184,27 @@ export class RequestRepository {
    */
   async bulkCreate(requests: Request[]): Promise<Request[]> {
     try {
-      await this.db.requests.bulkAdd(requests);
+      const db = getDatabase().getRawDB();
+      const insertStmt = db.prepare(`
+        INSERT INTO requests
+        (id, name, description, method, url, headers, body, auth, tests,
+         collectionId, folderId, tags, createdAt, updatedAt, lastSentAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      const transaction = db.transaction(() => {
+        for (const req of requests) {
+          const serialized = serializeRequest(req);
+          insertStmt.run(
+            serialized.id, serialized.name, serialized.description, serialized.method,
+            serialized.url, serialized.headers, serialized.body, serialized.auth,
+            serialized.tests, serialized.collectionId, serialized.folderId, serialized.tags,
+            serialized.createdAt, serialized.updatedAt, serialized.lastSentAt
+          );
+        }
+      });
+
+      transaction();
       logger.info(`[RequestRepo] Bulk created ${requests.length} requests`);
       return requests;
     } catch (error) {
@@ -173,20 +218,37 @@ export class RequestRepository {
    */
   async bulkUpdate(updates: Array<{ id: string; changes: Partial<Request> }>): Promise<void> {
     try {
-      const transactions = updates.map(async ({ id, changes }) => {
-        const existing = await this.getById(id);
-        if (existing) {
+      const db = getDatabase().getRawDB();
+      const updateStmt = db.prepare(`
+        UPDATE requests SET
+          name = ?, description = ?, method = ?, url = ?, headers = ?, body = ?, auth = ?,
+          tests = ?, collectionId = ?, folderId = ?, tags = ?, updatedAt = ?
+        WHERE id = ?
+      `);
+
+      const transaction = db.transaction(async () => {
+        for (const { id, changes } of updates) {
+          const existing = await this.getById(id);
+          if (!existing) continue;
+
           const updated: Request = {
             ...existing,
             ...changes,
             id,
             updatedAt: new Date(),
           };
-          await this.db.requests.put(updated);
+          const serialized = serializeRequest(updated);
+
+          updateStmt.run(
+            serialized.name, serialized.description, serialized.method, serialized.url,
+            serialized.headers, serialized.body, serialized.auth, serialized.tests,
+            serialized.collectionId, serialized.folderId, serialized.tags,
+            serialized.updatedAt, serialized.id
+          );
         }
       });
 
-      await Promise.all(transactions);
+      transaction();
       logger.info(`[RequestRepo] Bulk updated ${updates.length} requests`);
     } catch (error) {
       logger.error('[RequestRepo] Failed to bulk update requests', error);
@@ -199,7 +261,16 @@ export class RequestRepository {
    */
   async bulkDelete(ids: string[]): Promise<void> {
     try {
-      await this.db.requests.bulkDelete(ids);
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('DELETE FROM requests WHERE id = ?');
+
+      const transaction = db.transaction(() => {
+        for (const id of ids) {
+          stmt.run(id);
+        }
+      });
+
+      transaction();
       logger.info(`[RequestRepo] Bulk deleted ${ids.length} requests`);
     } catch (error) {
       logger.error('[RequestRepo] Failed to bulk delete requests', error);
@@ -212,7 +283,10 @@ export class RequestRepository {
    */
   async count(): Promise<number> {
     try {
-      return await this.db.requests.count();
+      const db = getDatabase().getRawDB();
+      const stmt = db.prepare('SELECT COUNT(*) as count FROM requests');
+      const result = stmt.get() as { count: number };
+      return result.count;
     } catch (error) {
       logger.error('[RequestRepo] Failed to count requests', error);
       throw error;
