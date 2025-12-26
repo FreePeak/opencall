@@ -117,7 +117,7 @@ export const DEFAULT_CONFIG = {
   p2p: {
     enabled: false,
     autoConnect: false,
-    discoveryMethods: ['webrtc', 'mdns'],
+    discoveryMethods: ['webrtc', 'mdns'] as string[],
     signalingServer: '',
   },
   security: {

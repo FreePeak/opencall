@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { logger } from '../utils/logger';
 import { COMMANDS, VIEWS, CONTEXT_KEYS } from '../utils/constants';
+import { getConfigurationManager, disposeConfigurationManager } from '../core/configuration-manager';
 
 let extensionContext: vscode.ExtensionContext | null = null;
 
@@ -8,6 +9,9 @@ export function activate(context: vscode.ExtensionContext): void {
   logger.info('OpenCall extension is being activated');
 
   extensionContext = context;
+
+  // Initialize configuration manager
+  getConfigurationManager();
 
   // Set the extension context key
   vscode.commands.executeCommand('setContext', CONTEXT_KEYS.ENABLED, true);
@@ -25,6 +29,7 @@ export function deactivate(): void {
   logger.info('OpenCall extension is being deactivated');
 
   // Clean up resources
+  disposeConfigurationManager();
   // TODO: Close database connections
   // TODO: Clean up P2P connections
   // TODO: Stop any running processes
