@@ -43,6 +43,7 @@
     "sync"
   ],
   "activationEvents": [
+    "*",
     "onCommand:opencall.open",
     "onCommand:opencall.createRequest",
     "onCommand:opencall.importCollection",
@@ -51,9 +52,7 @@
     "onLanguage:json",
     "onWebviewPanel:opencall"
   ],
-  "main": "./out/extension/extension.js",
-  "browser": "./out/webview/extension.js",
-  "icon": "assets/icon.png",
+  "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
@@ -127,7 +126,6 @@
           "id": "opencall-explorer",
           "name": "OpenCall",
           "when": "opencall:enabled",
-          "icon": "assets/icons/api.svg",
           "contextualTitle": "OpenCall"
         }
       ],
@@ -150,8 +148,7 @@
       "activitybar": [
         {
           "id": "opencall",
-          "title": "OpenCall",
-          "icon": "assets/icons/activity-bar.svg"
+          "title": "OpenCall"
         }
       ]
     },
@@ -378,20 +375,16 @@
     "lint:fix": "eslint src --ext ts --fix",
     "test": "node ./out/test/runTest.js",
     "test:watch": "node --inspect=5858 ./out/test/runTest.js",
-    "build": "npm run build:extension && npm run build:webview",
+    "build": "npm run build:extension",
     "build:extension": "esbuild src/extension/extension.ts --bundle --platform=node --external:vscode --outfile=out/extension.js --format=cjs --sourcemap",
-    "build:webview": "webpack --config webpack.config.js --mode production",
-    "build:dev": "npm run build:extension && webpack --config webpack.config.js --mode development",
-    "dev:webview": "webpack serve --config webpack.config.js --mode development",
+    "build:dev": "npm run build:extension",
     "package": "vsce package --out opencall.vsix",
     "publish": "vsce publish",
     "package:alt": "@vscode/vsce package --out opencall.vsix",
     "publish:alt": "@vscode/vsce publish",
-    "clean": "rimraf out dist",
-    "postinstall": "cd webview && npm install"
+    "clean": "rimraf out dist"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.6",
     "@types/node": "20.x",
@@ -414,7 +407,6 @@
     "@grpc/grpc-js": "^1.9.12",
     "ajv": "^8.12.0",
     "axios": "^1.6.2",
-    "better-sqlite3": "^12.5.0",
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.10",
     "dexie": "^3.2.4",

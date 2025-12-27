@@ -27,8 +27,15 @@ export class OpenCallDatabase {
   private dbPath: string;
 
   constructor(dbPath?: string) {
-    // Use provided path or default to workspace storage
-    this.dbPath = dbPath || path.join(process.cwd(), '.opencall', 'opencall.db');
+    // Use provided path or default to global storage
+    if (dbPath) {
+      this.dbPath = dbPath;
+    } else {
+      // Fallback: use home directory if no path provided
+      const os = require('os');
+      const path = require('path');
+      this.dbPath = path.join(os.homedir(), '.opencall', 'opencall.db');
+    }
 
     // Create database directory if it doesn't exist
     const fs = require('fs');
@@ -363,15 +370,14 @@ export async function closeDatabase(): Promise<void> {
 export async function deleteDatabase(): Promise<void> {
   try {
     if (dbInstance) {
+      const fs = require('fs');
+      const dbPath = dbInstance.getDbPath();
       dbInstance.close();
       dbInstance = null;
-    }
 
-    const fs = require('fs');
-    const dbPath = path.join(process.cwd(), '.opencall', 'opencall.db');
-
-    if (fs.existsSync(dbPath)) {
-      fs.unlinkSync(dbPath);
+      if (fs.existsSync(dbPath)) {
+        fs.unlinkSync(dbPath);
+      }
     }
 
     logger.info('[DB] Database deleted');

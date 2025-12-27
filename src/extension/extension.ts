@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { logger } from '../utils/logger';
 import { COMMANDS, VIEWS, CONTEXT_KEYS } from '../utils/constants';
 import { getConfigurationManager, disposeConfigurationManager } from '../core/configuration-manager';
-import { initDatabase, closeDatabase } from '../storage/database';
+import { initStorageManager, closeStorageManager } from '../storage/storage-manager';
 import { getExportImportService } from './export-import-service';
 
 let extensionContext: vscode.ExtensionContext | null = null;
@@ -15,9 +15,9 @@ export function activate(context: vscode.ExtensionContext): void {
   // Initialize configuration manager
   getConfigurationManager();
 
-  // Initialize database
-  initDatabase().catch((error) => {
-    logger.error('Failed to initialize database', error);
+  // Initialize storage manager
+  initStorageManager(context).catch((error) => {
+    logger.error('Failed to initialize storage manager', error);
   });
 
   // Set the extension context key
@@ -37,10 +37,8 @@ export function deactivate(): void {
 
   // Clean up resources
   disposeConfigurationManager();
-  closeDatabase().catch((error) => {
-    logger.error('Failed to close database', error);
-  });
-  // TODO: Clean up P2P connections
+  closeStorageManager();
+  // TODO: Stop P2P connections
   // TODO: Stop any running processes
 
   extensionContext = null;

@@ -33,7 +33,6 @@ test/**
 .github**
 .gitignore
 CHANGELOG.md
-LICENSE
 README.md
 **/.gitignore
 **/yarn.lock
