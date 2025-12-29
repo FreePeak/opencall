@@ -9,7 +9,7 @@ import {
   getNonce,
   getUrl,
 } from "./utils";
-import { IRequestHeaderInformation, IRequestObjectType } from "./utils/type";
+import { IRequestHeaderInformation, IRequestObjectType, IUserRequestSidebarState } from "./utils/type";
 import SidebarWebViewPanel from "./SidebarWebViewPanel";
 import ExtentionStateManager from "./ExtensionStateManger";
 
@@ -62,11 +62,78 @@ class MainWebViewPanel {
     return this.mainPanel;
   }
 
+  private async handleSaveRequest(requestData: any) {
+    try {
+      const { requestUrl, requestMethod, keyValueTableData, authOption, authData, bodyOption, bodyRawOption, bodyRawData } = requestData;
+      
+      // Create a request object
+      const requestObject = {
+        requestMethod,
+        requestUrl,
+        authOption,
+        authData,
+        bodyOption,
+        bodyRawOption,
+        bodyRawData,
+        keyValueTableData,
+      };
+
+      // Generate a unique ID for the request
+      const requestId = uuidv4();
+      const requestedTime = new Date().getTime();
+
+      // Get current history
+      const { userRequestHistory } = this.stateManager.getExtensionContext(COLLECTION.HISTORY_COLLECTION);
+
+      // Process the request data to match the interface
+      const url = getUrl(requestUrl);
+      const method = requestMethod;
+      const headers = getHeaders(keyValueTableData, authOption, authData);
+      const responseType = 'text';
+
+      // Create new request entry matching IUserRequestSidebarState
+      const newRequest: IUserRequestSidebarState = {
+        url,
+        method,
+        headers,
+        responseType,
+        requestedTime,
+        favoritedTime: null,
+        isUserFavorite: false,
+        id: requestId,
+        requestObject,
+      };
+
+      // Save to history
+      if (!userRequestHistory) {
+        await this.stateManager.addExtensionContext(COLLECTION.HISTORY_COLLECTION, {
+          history: [newRequest],
+        });
+      } else {
+        await this.stateManager.addExtensionContext(COLLECTION.HISTORY_COLLECTION, {
+          history: [newRequest, ...userRequestHistory],
+        });
+      }
+
+      // Show success message
+      vscode.window.showInformationMessage('Request saved successfully!');
+      
+      // Update sidebar
+      this.sidebarWebViewPanel.postMainWebViewPanelMessage(
+        this.stateManager.getExtensionContext(COLLECTION.HISTORY_COLLECTION),
+        this.stateManager.getExtensionContext(COLLECTION.FAVORITES_COLLECTION),
+      );
+
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to save request: ${error}`);
+    }
+  }
+
   private receiveWebviewMessage() {
     if (!this.mainPanel) return;
 
     this.mainPanel.webview.onDidReceiveMessage(
-      ({
+      async ({
         requestMethod,
         requestUrl,
         authOption,
@@ -76,18 +143,23 @@ class MainWebViewPanel {
         bodyRawData,
         keyValueTableData,
         command,
+        requestData,
       }) => {
         if (command === COMMAND.ALERT_COPY) {
           vscode.window.showInformationMessage(MESSAGE.COPY_SUCCESFUL_MESSAGE);
+          return;
+        }
 
+        if (command === 'saveRequest') {
+          await this.handleSaveRequest(requestData);
           return;
         }
 
         if (requestUrl.length === 0) {
           vscode.window.showWarningMessage(MESSAGE.WARNING_MESSAGE);
-
           return;
         }
+
         const requestObject = {
           requestMethod,
           requestUrl,
