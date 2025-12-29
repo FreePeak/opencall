@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
 
-import { COLLECTION, COMMAND, MESSAGE } from "./constants";
-import ExtentionStateManager from "./ExtensionStateManger";
-import MainWebViewPanel from "./MainWebViewPanel";
-import SidebarWebViewPanel from "./SidebarWebViewPanel";
+import { COLLECTION, COMMAND, MESSAGE } from "./extension/constants";
+import ExtentionStateManager from "./extension/ExtensionStateManger";
+import MainWebViewPanel from "./extension/MainWebViewPanel";
+import SidebarWebViewPanel from "./extension/SidebarWebViewPanel";
 
 export async function activate(context: vscode.ExtensionContext) {
   const StateManager = new ExtentionStateManager(context);
