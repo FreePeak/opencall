@@ -44,6 +44,8 @@
   ],
   "activationEvents": [
     "onCommand:opencall.newRequest",
+    "onCommand:opencall.createRequest",
+    "onCommand:opencall.open",
     "onView:opencall.collectionMenu"
   ],
   "main": "./out/extension.js",
@@ -53,6 +55,31 @@
         "command": "opencall.newRequest",
         "category": "Start",
         "title": "New Request"
+      },
+      {
+        "command": "opencall.createRequest",
+        "category": "OpenCall",
+        "title": "Create Request"
+      },
+      {
+        "command": "opencall.sendRequest",
+        "category": "OpenCall",
+        "title": "Send Request"
+      },
+      {
+        "command": "opencall.refreshExplorer",
+        "category": "OpenCall",
+        "title": "Refresh Explorer"
+      },
+      {
+        "command": "opencall.exportCollection",
+        "category": "OpenCall",
+        "title": "Export Collection"
+      },
+      {
+        "command": "opencall.open",
+        "category": "OpenCall",
+        "title": "Open API Client"
       }
     ],
     "viewsContainers": {
@@ -78,24 +105,24 @@
       "view/title": [
         {
           "command": "opencall.refreshExplorer",
-          "when": "view == opencall-explorer",
+          "when": "view == opencall.collectionMenu",
           "group": "navigation"
         },
         {
           "command": "opencall.createRequest",
-          "when": "view == opencall-explorer",
+          "when": "view == opencall.collectionMenu",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
           "command": "opencall.sendRequest",
-          "when": "view == opencall-explorer && viewItem == request",
+          "when": "view == opencall.collectionMenu && viewItem == request",
           "group": "inline"
         },
         {
           "command": "opencall.exportCollection",
-          "when": "view == opencall-explorer && viewItem == collection",
+          "when": "view == opencall.collectionMenu && viewItem == collection",
           "group": "1_opencall"
         }
       ],
@@ -331,6 +358,7 @@
     "eslint": "^8.55.0",
     "glob": "^10.3.10",
     "mocha": "^10.2.0",
+    "process": "^0.11.10",
     "react-is": "^19.2.3",
     "rimraf": "^5.0.5",
     "style-loader": "^4.0.0",
@@ -359,6 +387,7 @@
     "js-yaml": "^4.1.0",
     "lodash": "^4.17.21",
     "markdown-it": "^13.0.2",
+    "monaco-editor": "^0.34.0",
     "openapi-types": "^12.1.3",
     "postman-code-generators": "^1.2.2",
     "postman-collection": "^4.1.4",

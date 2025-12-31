@@ -1,6 +1,10 @@
 import FormData from "form-data";
 
-import { TYPE } from "../constants";
+const TYPE = {
+  BODY_RAW: "Raw",
+  BODY_FORM_DATA: "Form Data",
+  BODY_FORM_URLENCODED: "x-www-form-urlencoded",
+};
 import { IBodyRawData, IParameterKeyValueData } from "./type";
 
 function getBody(

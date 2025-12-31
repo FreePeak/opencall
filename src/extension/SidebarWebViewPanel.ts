@@ -31,6 +31,9 @@ class SidebarWebViewPanel {
       webviewView.webview,
     );
 
+    // ensure extension icon is available - if a panel needs it later
+    // (keeps behavior consistent with main panel)
+
     this.sidebarWebview.webview.postMessage({
       messageCategory: CATEGORY.COLLECTION_DATA,
       history: this.stateManager.getExtensionContext(
@@ -39,6 +42,11 @@ class SidebarWebViewPanel {
       favorites: this.stateManager.getExtensionContext(
         COLLECTION.FAVORITES_COLLECTION,
       ),
+    });
+
+    console.log('Initial sidebar data sent:', {
+      history: this.stateManager.getExtensionContext(COLLECTION.HISTORY_COLLECTION),
+      favorites: this.stateManager.getExtensionContext(COLLECTION.FAVORITES_COLLECTION)
     });
 
     this.receiveSidebarWebViewMessage();
@@ -52,7 +60,15 @@ class SidebarWebViewPanel {
       userRequestHistory: IUserRequestSidebarState[] | undefined;
     },
   ) {
-    if (!this.sidebarWebview) return;
+    if (!this.sidebarWebview) {
+      console.log('Sidebar webview not available, skipping update');
+      return;
+    }
+
+    console.log('Updating sidebar with data:', {
+      history: userHistoryData,
+      favorites: userFavoritesData
+    });
 
     this.sidebarWebview.webview.postMessage({
       messageCategory: CATEGORY.COLLECTION_DATA,
@@ -183,18 +199,18 @@ class SidebarWebViewPanel {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src ${webview.cspSource} https: data:; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src ${webview.cspSource} https:; font-src ${webview.cspSource};">
           <title>REST API Tester Sidebar</title>
           <link href="${resetCssSrc}" rel="stylesheet">
           <link href="${mainStylesCssSrc}" rel="stylesheet">
         </head>
         <body>
           <div id="root"></div>
+          <script nonce="${nonce}">window.process = window.process || { env: {} };</script>
           <script nonce="${nonce}">
-          let vscode;
-
-          if (typeof acquireVsCodeApi !== "undefined") {
-            vscode = acquireVsCodeApi();
-          }
+            (function() {
+              window.vscode = acquireVsCodeApi();
+            })();
           </script>
           <script nonce="${nonce}" src="${scriptSrc}"></script>
         </body>

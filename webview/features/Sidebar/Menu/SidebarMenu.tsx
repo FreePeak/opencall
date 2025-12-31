@@ -40,9 +40,11 @@ const SidebarMenu = () => {
 
   useLayoutEffect(() => {
     window.addEventListener("message", (message) => {
+      console.log('Sidebar received message:', message.data);
       const { messageCategory, history, favorites, target } = message.data;
 
       if (messageCategory === SIDEBAR.COLLECTION_DATA) {
+        console.log('Processing collection data:', { history, favorites });
         handleUserHistoryCollection(history?.userRequestHistory);
         handleUserFavoritesCollection(favorites?.userRequestHistory);
       } else if (messageCategory === SIDEBAR.DELETE_COMPLETE) {

@@ -1,4 +1,9 @@
-import { TYPE } from "../constants";
+const TYPE = {
+  HEADERS: "Headers",
+  BASIC_AUTH: "Basic Auth",
+  BEARER_TOKEN: "Bearer Token",
+  AUTHORIZATION: "Authorization",
+};
 import { Buffer } from "buffer";
 
 import {

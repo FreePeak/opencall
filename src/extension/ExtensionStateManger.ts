@@ -16,8 +16,13 @@ class ExtentionStateManager {
       this.context.globalState.get(state);
 
     return {
-      userRequestHistory: userRequestHistory,
+      userRequestHistory: userRequestHistory || [],
     };
+  }
+
+  hasExtensionContext(state: string): boolean {
+    const data = this.context.globalState.get(state);
+    return !!data && Array.isArray(data) && data.length > 0;
   }
 
   async addExtensionContext(

@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+const Database: any = require('better-sqlite3');
 import path from 'path';
 import * as vscode from 'vscode';
 import { Request, Response, Collection, Environment } from '../types';
@@ -23,7 +23,7 @@ export interface RequestExecutionRecord {
  * Database location: workspace storage or global storage
  */
 export class OpenCallDatabase {
-  private db: Database.Database;
+  private db: any;
   private dbPath: string;
 
   constructor(dbPath?: string) {
@@ -145,7 +145,7 @@ export class OpenCallDatabase {
    * Get the raw SQLite database instance
    * Use this for direct SQL queries
    */
-  getRawDB(): Database.Database {
+  getRawDB(): any {
     return this.db;
   }
 

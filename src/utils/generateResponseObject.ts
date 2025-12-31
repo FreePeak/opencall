@@ -1,6 +1,8 @@
 import axios from "axios";
 
-import { MESSAGE, TYPE } from "../constants";
+// Lightweight internal constants to avoid coupling with extension constants
+const TYPE = { RESPONSE: 'Response' } as const;
+const MESSAGE = { NOT_FOUND: 'Not Found', ERROR: 'Error' } as const;
 import { generateArrayObjectFromData } from "./index";
 import { IRequestData, IUserRequestSidebarState } from "./type";
 
@@ -18,7 +20,7 @@ async function generateResponseObject(
     const receivedTime = new Date().getTime();
     const totalRequestTime = receivedTime - sentTime;
     const headersSize = Object.keys(response.headers).length;
-    const headersArray = generateArrayObjectFromData(response.headers);
+    const headersArray = generateArrayObjectFromData(response.headers as any);
 
     if (typeof response.data === "object") {
       response.data = JSON.stringify(response.data);
@@ -46,7 +48,7 @@ async function generateResponseObject(
       const totalRequestTime = receivedTime - sentTime;
 
       const headersSize = Object.keys(error.response.headers).length;
-      const headersArray = generateArrayObjectFromData(error.response.headers);
+      const headersArray = generateArrayObjectFromData(error.response.headers as any);
 
       const errorObject = {
         type: TYPE.RESPONSE,

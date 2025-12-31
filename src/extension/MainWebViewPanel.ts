@@ -54,7 +54,7 @@ class MainWebViewPanel {
 
     this.mainPanel.iconPath = vscode.Uri.joinPath(
       this.extensionUri,
-      "icons/images/icon.png",
+      "media/icon.svg",
     );
 
     this.receiveWebviewMessage();
@@ -284,18 +284,18 @@ class MainWebViewPanel {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src ${panel.cspSource} https: data:; style-src ${panel.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src ${panel.cspSource} https:; font-src ${panel.cspSource};">
           <title>REST API Tester</title>
           <link href="${resetCssSrc}" rel="stylesheet">
           <link href="${mainStylesCssSrc}" rel="stylesheet">
         </head>
         <body>
           <div id="root"></div>
+          <script nonce="${nonce}">window.process = window.process || { env: {} };</script>
           <script nonce="${nonce}">
-          let vscode;
-
-          if (typeof acquireVsCodeApi !== "undefined") {
-            vscode = acquireVsCodeApi();
-          }
+            (function() {
+              window.vscode = acquireVsCodeApi();
+            })();
           </script>
           <script src="${scriptSrc}" nonce="${nonce}"></script>
         </body>

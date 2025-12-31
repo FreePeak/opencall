@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 
 module.exports = {
   entry: {
@@ -8,6 +9,16 @@ module.exports = {
   target: 'web',
   mode: 'production',
   devtool: 'source-map',
+  resolve: {
+    fallback: {
+      process: require.resolve('process/browser')
+    }
+  },
+  plugins: [
+    new webpack.ProvidePlugin({
+      process: 'process/browser'
+    })
+  ],
   module: {
     rules: [
       {

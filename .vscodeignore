@@ -25,7 +25,6 @@ vsc-extension-quickstart.md
 **/yarn.lock
 **/pnpm-lock.yaml
 **/coverage/**
-**/node_modules/**
 **/.DS_Store
 **/Thumbs.db
 test/**
