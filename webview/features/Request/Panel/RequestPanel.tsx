@@ -1,6 +1,6 @@
 import React, { FormEvent, useEffect, useRef } from "react";
 import styled from "styled-components";
-import shallow from "zustand/shallow";
+import { shallow } from "zustand/shallow";
 
 import { COMMON } from "../../../constants";
 import useStore from "../../../store/useStore";

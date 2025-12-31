@@ -1,5 +1,5 @@
 import React from "react";
-import shallow from "zustand/shallow";
+import { shallow } from "zustand/shallow";
 
 import InputWrapper from "../../../components/InputWrapper";
 import Wrapper from "../../../components/Wrapper";

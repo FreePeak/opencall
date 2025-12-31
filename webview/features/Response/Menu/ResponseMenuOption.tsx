@@ -1,6 +1,6 @@
 import React from "react";
 import styled from "styled-components";
-import shallow from "zustand/shallow";
+import { shallow } from "zustand/shallow";
 
 import { COMMON, HEIGHT, OPTION, REQUEST } from "../../../constants";
 import CodeEditor from "../../../shared/CodeEditor";

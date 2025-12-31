@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import styled from "styled-components";
-import shallow from "zustand/shallow";
+import { shallow } from "zustand/shallow";
 
 import { REQUEST } from "../../../constants";
 import useStore from "../../../store/useStore";

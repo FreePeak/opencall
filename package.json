@@ -87,7 +87,7 @@
         {
           "id": "opencall",
           "title": "OpenCall",
-          "icon": "$(api)"
+          "icon": "media/icon.svg"
         }
       ]
     },

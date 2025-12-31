@@ -284,7 +284,7 @@ class MainWebViewPanel {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src ${panel.cspSource} https: data:; style-src ${panel.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src ${panel.cspSource} https:; font-src ${panel.cspSource};">
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src ${panel.cspSource} https: data:; style-src ${panel.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src ${panel.cspSource} https:; font-src ${panel.cspSource}; worker-src 'self' blob:;">
           <title>REST API Tester</title>
           <link href="${resetCssSrc}" rel="stylesheet">
           <link href="${mainStylesCssSrc}" rel="stylesheet">

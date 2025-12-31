@@ -1,6 +1,6 @@
 import React, { MouseEvent } from "react";
 import styled from "styled-components";
-import shallow from "zustand/shallow";
+import { shallow } from "zustand/shallow";
 
 import CopyIcon from "../../../components/CopyIcon";
 import SelectWrapper from "../../../components/SelectWrapper";

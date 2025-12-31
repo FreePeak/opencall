@@ -1,6 +1,6 @@
 import React from "react";
 import styled from "styled-components";
-import shallow from "zustand/shallow";
+import { shallow } from "zustand/shallow";
 
 import SelectWrapper from "../../../components/SelectWrapper";
 import { OPTION, REQUEST } from "../../../constants";

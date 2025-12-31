@@ -1,4 +1,3 @@
-import Editor from "@monaco-editor/react";
 import React, { useEffect, useRef } from "react";
 import styled from "styled-components";
 
@@ -23,63 +22,47 @@ const CodeEditor = ({
   viewOption,
   requestForm,
   previewMode,
-  editorOption,
   editorHeight,
   codeEditorValue,
   handleEditorChange,
   shouldBeautifyEditor,
   handleBeautifyButton,
 }: ICodeEditorProps) => {
-  const editorRef = useRef<any>(null);
-  const handleEditorOnMount = (editor: any) => {
-    editorRef.current = editor;
-  };
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (shouldBeautifyEditor && requestForm) {
+    if (shouldBeautifyEditor && requestForm && textareaRef.current) {
       if (handleBeautifyButton) {
         handleBeautifyButton();
       }
 
-      setTimeout(async () => {
-        await editorRef.current.getAction("editor.action.formatDocument").run();
-      }, 200);
+      // Try to format JSON if possible
+      try {
+        const value = textareaRef.current.value;
+        if (language === "json" || language === "javascript") {
+          const parsed = JSON.parse(value);
+          const formatted = JSON.stringify(parsed, null, 2);
+          textareaRef.current.value = formatted;
+          handleEditorChange?.(formatted);
+        }
+      } catch (error) {
+        console.error("Error formatting content:", error);
+      }
     }
   }, [shouldBeautifyEditor]);
-
-  useEffect(() => {
-    if (requestForm || !previewMode || viewOption === RESPONSE.PREVIEW) return;
-
-    if (editorRef.current?.getValue() !== codeEditorValue) {
-      editorRef.current?.setValue(codeEditorValue);
-    }
-
-    setTimeout(async () => {
-      editorRef.current?.updateOptions(OPTION.READ_ONLY_FALSE_OPTION);
-
-      await editorRef.current?.getAction("editor.action.formatDocument").run();
-
-      if (viewOption === REQUEST.RAW) {
-        editorRef.current?.updateOptions(OPTION.LINE_NUMBER_OPTION);
-      } else {
-        editorRef.current?.updateOptions(OPTION.READ_ONLY_TRUE_OPTION);
-      }
-    }, 300);
-  }, [viewOption, language]);
 
   return (
     <EditorWrapper>
       {viewOption === RESPONSE.PREVIEW && previewMode ? (
         <ResponsePreview sourceCode={codeEditorValue} />
       ) : (
-        <Editor
-          height={editorHeight}
-          language={language}
-          theme={RESPONSE.THEME}
+        <SimpleTextEditor
+          ref={textareaRef}
           value={codeEditorValue}
-          options={editorOption}
-          onChange={handleEditorChange}
-          onMount={handleEditorOnMount}
+          onChange={(e) => handleEditorChange?.(e.target.value)}
+          readOnly={viewOption !== REQUEST.RAW}
+          style={{ height: editorHeight }}
+          spellCheck="false"
         />
       )}
     </EditorWrapper>
@@ -88,6 +71,31 @@ const CodeEditor = ({
 
 const EditorWrapper = styled.div`
   margin-top: 2rem;
+`;
+
+const SimpleTextEditor = styled.textarea`
+  width: 100%;
+  padding: 1rem;
+  font-family: "Cascadia Code", "Monaco", "Menlo", "Ubuntu Mono", "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  background-color: var(--vscode-editor-background, #1e1e1e);
+  color: var(--vscode-editor-foreground, #d4d4d4);
+  border: 1px solid var(--vscode-editorBorder, #333);
+  border-radius: 4px;
+  resize: none;
+  tab-size: 2;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--vscode-focusBorder, #007acc);
+    box-shadow: 0 0 0 1px var(--vscode-focusBorder, #007acc);
+  }
+
+  &:read-only {
+    cursor: default;
+    opacity: 1;
+  }
 `;
 
 export default CodeEditor;

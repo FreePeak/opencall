@@ -1,5 +1,5 @@
 import React from "react";
-import shallow from "zustand/shallow";
+import { shallow } from "zustand/shallow";
 
 import LoadButtonsBlock from "../../../components/LoadButtonsBlock";
 import { HEIGHT, OPTION, REQUEST } from "../../../constants";

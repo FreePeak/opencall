@@ -1,5 +1,5 @@
 import React, { Fragment, MouseEvent } from "react";
-import shallow from "zustand/shallow";
+import { shallow } from "zustand/shallow";
 
 import DetailOption from "../../../components/DetailOption";
 import MenuOption from "../../../components/MenuOption";

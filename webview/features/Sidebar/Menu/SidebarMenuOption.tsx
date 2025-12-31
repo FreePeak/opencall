@@ -1,5 +1,5 @@
 import React from "react";
-import shallow from "zustand/shallow";
+import { shallow } from "zustand/shallow";
 
 import { REQUEST, SIDEBAR } from "../../../constants";
 import useStore from "../../../store/useStore";
