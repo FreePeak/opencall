@@ -49,6 +49,7 @@ export interface Request {
   collectionId?: string;
   folderId?: string;
   tags?: string[];
+  params?: Record<string, string>;
   createdAt: Date;
   updatedAt: Date;
   lastSentAt?: Date;
@@ -148,6 +149,7 @@ export interface ResponseHeader {
 }
 
 export interface Cookie {
+  id: string;
   name: string;
   value: string;
   domain?: string;
@@ -156,6 +158,7 @@ export interface Cookie {
   httpOnly?: boolean;
   secure?: boolean;
   sameSite?: 'Strict' | 'Lax' | 'None';
+  createdAt: Date;
 }
 
 export interface Collection {

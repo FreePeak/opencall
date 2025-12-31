@@ -43,112 +43,61 @@
     "sync"
   ],
   "activationEvents": [
-    "*",
-    "onCommand:opencall.open",
+    "onCommand:opencall.newRequest",
     "onCommand:opencall.createRequest",
-    "onCommand:opencall.importCollection",
-    "onView:opencall-explorer",
-    "onView:opencall-history",
-    "onLanguage:json",
-    "onWebviewPanel:opencall"
+    "onCommand:opencall.open",
+    "onView:opencall.collectionMenu"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "opencall.open",
-        "title": "Open API Client",
-        "category": "OpenCall",
-        "icon": "$(debug-start)"
+        "command": "opencall.newRequest",
+        "category": "Start",
+        "title": "New Request"
       },
       {
         "command": "opencall.createRequest",
-        "title": "Create New Request",
         "category": "OpenCall",
-        "icon": "$(add)"
-      },
-      {
-        "command": "opencall.createCollection",
-        "title": "Create Collection",
-        "category": "OpenCall"
-      },
-      {
-        "command": "opencall.createEnvironment",
-        "title": "Create Environment",
-        "category": "OpenCall"
-      },
-      {
-        "command": "opencall.importCollection",
-        "title": "Import Collection",
-        "category": "OpenCall"
-      },
-      {
-        "command": "opencall.exportCollection",
-        "title": "Export Collection",
-        "category": "OpenCall"
-      },
-      {
-        "command": "opencall.startP2PSession",
-        "title": "Start P2P Session",
-        "category": "OpenCall"
-      },
-      {
-        "command": "opencall.joinP2PSession",
-        "title": "Join P2P Session",
-        "category": "OpenCall"
-      },
-      {
-        "command": "opencall.loadProtoFile",
-        "title": "Load Proto File",
-        "category": "OpenCall"
-      },
-      {
-        "command": "opencall.generateFromOpenAPI",
-        "title": "Generate from OpenAPI Spec",
-        "category": "OpenCall"
+        "title": "Create Request"
       },
       {
         "command": "opencall.sendRequest",
-        "title": "Send Request",
         "category": "OpenCall",
-        "icon": "$(play)"
+        "title": "Send Request"
       },
       {
         "command": "opencall.refreshExplorer",
-        "title": "Refresh",
         "category": "OpenCall",
-        "icon": "$(refresh)"
+        "title": "Refresh Explorer"
+      },
+      {
+        "command": "opencall.exportCollection",
+        "category": "OpenCall",
+        "title": "Export Collection"
+      },
+      {
+        "command": "opencall.open",
+        "category": "OpenCall",
+        "title": "Open API Client"
       }
     ],
-    "views": {
-      "explorer": [
-        {
-          "id": "opencall-explorer",
-          "name": "OpenCall",
-          "when": "opencall:enabled",
-          "contextualTitle": "OpenCall"
-        }
-      ],
-      "opencall": [
-        {
-          "id": "opencall-history",
-          "name": "History",
-          "when": "opencall:enabled",
-          "icon": "$(history)"
-        },
-        {
-          "id": "opencall-p2p",
-          "name": "P2P Session",
-          "when": "opencall:p2p-enabled",
-          "icon": "$(output)"
-        }
-      ]
-    },
     "viewsContainers": {
       "activitybar": [
         {
           "id": "opencall",
-          "title": "OpenCall"
+          "title": "OpenCall",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "opencall": [
+        {
+          "type": "webview",
+          "id": "opencall.collectionMenu",
+          "name": "OpenCall API Client",
+          "contextualTitle": "OpenCall API Client"
         }
       ]
     },
@@ -156,24 +105,24 @@
       "view/title": [
         {
           "command": "opencall.refreshExplorer",
-          "when": "view == opencall-explorer",
+          "when": "view == opencall.collectionMenu",
           "group": "navigation"
         },
         {
           "command": "opencall.createRequest",
-          "when": "view == opencall-explorer",
+          "when": "view == opencall.collectionMenu",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
           "command": "opencall.sendRequest",
-          "when": "view == opencall-explorer && viewItem == request",
+          "when": "view == opencall.collectionMenu && viewItem == request",
           "group": "inline"
         },
         {
           "command": "opencall.exportCollection",
-          "when": "view == opencall-explorer && viewItem == collection",
+          "when": "view == opencall.collectionMenu && viewItem == collection",
           "group": "1_opencall"
         }
       ],
@@ -367,7 +316,7 @@
     "languages": []
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run compile && npm run build:webview",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
@@ -375,9 +324,11 @@
     "lint:fix": "eslint src --ext ts --fix",
     "test": "node ./out/test/runTest.js",
     "test:watch": "node --inspect=5858 ./out/test/runTest.js",
-    "build": "npm run build:extension",
+    "build": "npm run build:extension && npm run build:webview",
     "build:extension": "esbuild src/extension/extension.ts --bundle --platform=node --external:vscode --outfile=out/extension.js --format=cjs --sourcemap",
-    "build:dev": "npm run build:extension",
+    "build:webview": "webpack --mode production",
+    "build:dev": "npm run build:extension && npm run build:webview",
+    "watch:webview": "webpack --mode development --watch",
     "package": "vsce package --out opencall.vsix",
     "publish": "vsce publish",
     "package:alt": "@vscode/vsce package --out opencall.vsix",
@@ -385,26 +336,45 @@
     "clean": "rimraf out dist"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/plugin-transform-runtime": "^7.28.5",
+    "@babel/preset-env": "^7.28.5",
+    "@babel/preset-react": "^7.28.5",
+    "@babel/preset-typescript": "^7.28.5",
+    "@babel/runtime": "^7.28.4",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.6",
     "@types/node": "20.x",
+    "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^10.0.0",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.13.2",
     "@typescript-eslint/parser": "^6.13.2",
     "@vscode/test-electron": "^2.3.9",
     "@vscode/vsce": "^3.0.0",
+    "babel-loader": "^10.0.0",
+    "css-loader": "^7.1.2",
     "esbuild": "^0.19.10",
     "eslint": "^8.55.0",
     "glob": "^10.3.10",
     "mocha": "^10.2.0",
+    "process": "^0.11.10",
+    "react-is": "^19.2.3",
     "rimraf": "^5.0.5",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.4",
     "typescript": "^5.3.3",
-    "webpack": "^5.89.0",
+    "url": "^0.11.4",
+    "webpack": "^5.104.1",
     "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^4.15.1"
+    "webpack-dev-server": "^4.15.2"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.9.12",
+    "@monaco-editor/react": "^4.4.5",
+    "@types/react": "^18.0.35",
+    "@types/styled-components": "^5.1.26",
+    "@types/vscode": "^1.77.0",
     "ajv": "^8.12.0",
     "axios": "^1.6.2",
     "crypto-js": "^4.2.0",
@@ -417,11 +387,22 @@
     "js-yaml": "^4.1.0",
     "lodash": "^4.17.21",
     "markdown-it": "^13.0.2",
+    "monaco-editor": "^0.34.0",
     "openapi-types": "^12.1.3",
+    "postman-code-generators": "^1.2.2",
+    "postman-collection": "^4.1.4",
+    "prop-types": "^15.8.1",
     "protobufjs": "^7.2.5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^4.4.0",
+    "react-spinners": "^0.13.3",
     "semver": "^7.5.4",
     "simple-peer": "^9.11.1",
-    "uuid": "^9.0.1"
+    "styled-components": "^5.3.5",
+    "use-debounce": "^8.0.2",
+    "uuid": "^9.0.1",
+    "zustand": "^4.0.0-rc.1"
   },
   "extensionKind": [
     "ui",
