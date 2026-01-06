@@ -93,17 +93,61 @@ class SidebarWebViewPanel {
         if (command === COMMAND.START_APP) {
           vscode.commands.executeCommand(COMMAND.MAIN_WEB_VIEW_PANEL);
         } else if (command === COMMAND.ADD_TO_FAVORITES) {
-          await this.stateManager.updateExtensionContext(
-            COLLECTION.HISTORY_COLLECTION,
-            id,
-            COMMAND.ADD,
-          );
+          // Get the request from history
+          const historyData = this.stateManager.getExtensionContext(COLLECTION.HISTORY_COLLECTION);
+          const historyItem = historyData?.userRequestHistory?.find((item: any) => item.id === id);
+          
+          if (historyItem) {
+            // Mark as favorite in history
+            const updatedItem = {
+              ...historyItem,
+              isUserFavorite: true,
+              favoritedTime: new Date().getTime(),
+            };
+            
+            // Add to favorites collection
+            const favoritesData = this.stateManager.getExtensionContext(COLLECTION.FAVORITES_COLLECTION);
+            const favorites = favoritesData?.userRequestHistory || [];
+            
+            await this.stateManager.addExtensionContext(COLLECTION.FAVORITES_COLLECTION, {
+              history: [updatedItem, ...favorites],
+            });
+            
+            // Update history to mark as favorite
+            const history = historyData?.userRequestHistory || [];
+            const updatedHistory = history.map((item: any) => 
+              item.id === id ? updatedItem : item
+            );
+            
+            await this.stateManager.addExtensionContext(COLLECTION.HISTORY_COLLECTION, {
+              history: updatedHistory,
+            });
+          }
         } else if (command === COMMAND.REMOVE_FROM_FAVORITES) {
-          await this.stateManager.updateExtensionContext(
-            COLLECTION.HISTORY_COLLECTION,
-            id,
-          );
-
+          // Get the request from history
+          const historyData = this.stateManager.getExtensionContext(COLLECTION.HISTORY_COLLECTION);
+          const historyItem = historyData?.userRequestHistory?.find((item: any) => item.id === id);
+          
+          if (historyItem) {
+            // Mark as not favorite in history
+            const updatedItem = {
+              ...historyItem,
+              isUserFavorite: false,
+              favoritedTime: null,
+            };
+            
+            // Update history
+            const history = historyData?.userRequestHistory || [];
+            const updatedHistory = history.map((item: any) => 
+              item.id === id ? updatedItem : item
+            );
+            
+            await this.stateManager.addExtensionContext(COLLECTION.HISTORY_COLLECTION, {
+              history: updatedHistory,
+            });
+          }
+          
+          // Remove from favorites collection
           await this.stateManager.deleteExtensionContext(
             COLLECTION.FAVORITES_COLLECTION,
             id,

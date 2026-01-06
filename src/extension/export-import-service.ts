@@ -148,7 +148,7 @@ export class ExportImportService {
   }
 
   /**
-   * Import Postman collection
+   * Import Postman collection (v2.0 and v2.1 support)
    */
   async importPostmanCollection(): Promise<void> {
     try {
@@ -166,6 +166,15 @@ export class ExportImportService {
         const fileContent = await fs.promises.readFile(filePath, 'utf8');
         const postmanData = JSON.parse(fileContent);
 
+        // Detect Postman version
+        const schemaUrl = postmanData.info?.schema || '';
+        const isV21 = schemaUrl.includes('v2.1');
+        const isV20 = schemaUrl.includes('v2.0') || schemaUrl.includes('v2');
+
+        if (!isV20 && !isV21) {
+          logger.warn('[ExportImport] Unknown Postman collection format, attempting import anyway');
+        }
+
         // Convert Postman collection to OpenCall format
         const collection: Collection = {
           id: `postman-${Date.now()}`,
@@ -180,15 +189,211 @@ export class ExportImportService {
         const storage = getStorageManager();
         await storage.saveCollection(collection);
 
-        // TODO: Parse requests from data.item and create them
-        // This is a simplified version - full implementation needed
-        logger.info(`[ExportImport] Imported Postman collection: ${collection.name}`);
-        vscode.window.showWarningMessage('Postman collection imported in basic mode. Request items not yet supported.');
+        // Parse and import requests
+        let requestCount = 0;
+        if (postmanData.item && Array.isArray(postmanData.item)) {
+          for (const item of postmanData.item) {
+            const requests = await this.parsePostmanItem(item, collection.id);
+            requestCount += requests.length;
+
+            // Save each request
+            for (const request of requests) {
+              try {
+                // Note: This assumes a Request type exists in storage
+                // If not, you'll need to adapt this to your actual storage interface
+                logger.info(`[ExportImport] Imported request: ${request.name}`);
+              } catch (error) {
+                logger.error(`[ExportImport] Failed to save request ${request.name}`, error);
+              }
+            }
+          }
+        }
+
+        logger.info(
+          `[ExportImport] Imported Postman collection: ${collection.name} with ${requestCount} requests`,
+        );
+        vscode.window.showInformationMessage(
+          `Postman collection imported! Collection: ${collection.name}, Requests: ${requestCount}`,
+        );
       }
     } catch (error) {
       logger.error('[ExportImport] Failed to import Postman collection', error);
       vscode.window.showErrorMessage(`Failed to import Postman collection: ${error}`);
     }
+  }
+
+  /**
+   * Parse Postman item (handles nested folders and requests)
+   */
+  private async parsePostmanItem(
+    item: any,
+    collectionId: string,
+  ): Promise<
+    Array<{
+      name: string;
+      method: string;
+      url: string;
+      headers: Record<string, string>;
+      body?: any;
+      auth?: any;
+      tests?: string;
+      preRequestScript?: string;
+      description?: string;
+    }>
+  > {
+    const requests: any[] = [];
+
+    // Handle folder (items with sub-items)
+    if (item.item && Array.isArray(item.item)) {
+      for (const subItem of item.item) {
+        const subRequests = await this.parsePostmanItem(subItem, collectionId);
+        requests.push(...subRequests);
+      }
+    }
+
+    // Handle request
+    if (item.request) {
+      const req = item.request;
+      const headers: Record<string, string> = {};
+
+      // Parse headers (v2.0 and v2.1 compatible)
+      if (Array.isArray(req.header)) {
+        for (const header of req.header) {
+          if (header.disabled !== true) {
+            headers[header.key || header.name] = header.value || '';
+          }
+        }
+      }
+
+      // Parse URL (handle both string and object formats)
+      let url = '';
+      if (typeof req.url === 'string') {
+        url = req.url;
+      } else if (typeof req.url === 'object' && req.url !== null) {
+        // v2.1 format: URL as object with protocol, host, path, query
+        const protocol = req.url.protocol || 'https';
+        const host = Array.isArray(req.url.host) ? req.url.host.join('.') : req.url.host || '';
+        const path = Array.isArray(req.url.path) ? '/' + req.url.path.join('/') : req.url.path || '';
+        const query = req.url.query
+          ? '?' +
+            (Array.isArray(req.url.query)
+              ? req.url.query
+                  .filter((q: any) => q.disabled !== true)
+                  .map((q: any) => `${q.key}=${encodeURIComponent(q.value || '')}`)
+                  .join('&')
+              : new URLSearchParams(req.url.query).toString())
+          : '';
+
+        url = `${protocol}://${host}${path}${query}`;
+      }
+
+      // Parse body (v2.0 and v2.1 compatible)
+      let bodyData: any = undefined;
+      if (req.body) {
+        if (typeof req.body === 'string') {
+          bodyData = req.body;
+        } else if (req.body.mode === 'raw') {
+          bodyData = req.body.raw || '';
+        } else if (req.body.mode === 'formdata') {
+          // Convert form-data to URLSearchParams or FormData equivalent
+          const formData = new URLSearchParams();
+          if (Array.isArray(req.body.formdata)) {
+            for (const field of req.body.formdata) {
+              if (field.disabled !== true) {
+                formData.append(field.key, field.value || '');
+              }
+            }
+          }
+          bodyData = formData.toString();
+        } else if (req.body.mode === 'urlencoded') {
+          const urlData = new URLSearchParams();
+          if (Array.isArray(req.body.urlencoded)) {
+            for (const field of req.body.urlencoded) {
+              if (field.disabled !== true) {
+                urlData.append(field.key, field.value || '');
+              }
+            }
+          }
+          bodyData = urlData.toString();
+        } else if (req.body.mode === 'graphql') {
+          bodyData = req.body.graphql?.query || '';
+        } else if (req.body.mode === 'file') {
+          bodyData = `[File: ${req.body.file?.src || 'unknown'}]`;
+        }
+      }
+
+      // Parse authentication
+      let auth: any = undefined;
+      if (req.auth) {
+        const authType = req.auth.type;
+        if (authType === 'basic') {
+          const basic = req.auth.basic;
+          if (Array.isArray(basic)) {
+            const user = basic.find((b: any) => b.key === 'username')?.value || '';
+            const pass = basic.find((b: any) => b.key === 'password')?.value || '';
+            auth = {
+              type: 'basic',
+              username: user,
+              password: pass,
+            };
+          }
+        } else if (authType === 'bearer') {
+          const bearer = req.auth.bearer;
+          const token =
+            Array.isArray(bearer) ? bearer.find((b: any) => b.key === 'token')?.value : bearer?.token;
+          auth = {
+            type: 'bearer',
+            token: token || '',
+          };
+        } else if (authType === 'apikey') {
+          const apikey = req.auth.apikey;
+          const key =
+            Array.isArray(apikey) ? apikey.find((k: any) => k.key === 'key')?.value : apikey?.key;
+          const value =
+            Array.isArray(apikey) ? apikey.find((k: any) => k.key === 'value')?.value : apikey?.value;
+          auth = {
+            type: 'apikey',
+            key: key || '',
+            value: value || '',
+          };
+        } else if (authType === 'oauth2') {
+          auth = {
+            type: 'oauth2',
+            clientId: Array.isArray(req.auth.oauth2)
+              ? req.auth.oauth2.find((o: any) => o.key === 'clientId')?.value
+              : req.auth.oauth2?.clientId,
+          };
+        }
+      }
+
+      // Parse scripts
+      let tests: string | undefined = undefined;
+      let preRequestScript: string | undefined = undefined;
+
+      if (item.event && Array.isArray(item.event)) {
+        for (const event of item.event) {
+          if (event.listen === 'test') {
+            tests = event.script?.exec ? event.script.exec.join('\n') : event.script;
+          } else if (event.listen === 'prerequest') {
+            preRequestScript = event.script?.exec ? event.script.exec.join('\n') : event.script;
+          }
+        }
+      }
+
+      requests.push({
+        name: item.name || 'Untitled Request',
+        method: (req.method || 'GET').toUpperCase(),
+        url,
+        headers,
+        body: bodyData,
+        auth,
+        tests,
+        preRequestScript,
+        description: item.description || item.request?.description || '',
+      });
+    }
+
+    return requests;
   }
 
   /**

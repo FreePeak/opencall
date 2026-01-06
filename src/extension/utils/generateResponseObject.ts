@@ -21,7 +21,7 @@ async function generateResponseObject(
     const headersArray = generateArrayObjectFromData(response.headers as any);
 
     if (typeof response.data === "object") {
-      response.data = JSON.stringify(response.data);
+      response.data = JSON.stringify(response.data, null, 2);
     }
 
     const responseDataObject = {
@@ -48,9 +48,13 @@ async function generateResponseObject(
       const headersSize = Object.keys(error.response.headers).length;
       const headersArray = generateArrayObjectFromData(error.response.headers as any);
 
+      const errorResponseData = typeof error.response.data === 'object' 
+        ? JSON.stringify(error.response.data, null, 2)
+        : error.response.data;
+
       const errorObject = {
         type: TYPE.RESPONSE,
-        data: JSON.stringify(error.response.data),
+        data: errorResponseData,
         headers: headersArray,
         headersLength: headersSize,
         statusCode: error.response.status,
