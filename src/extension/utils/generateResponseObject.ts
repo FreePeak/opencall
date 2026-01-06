@@ -12,13 +12,13 @@ async function generateResponseObject(
   const sentTime = new Date().getTime();
 
   try {
-    // @ts-expect-error
-    const response = await axios(configuration);
+    // Cast configuration to AxiosRequestConfig to satisfy axios type requirements
+    const response = await axios(configuration as import('axios').AxiosRequestConfig);
 
     const receivedTime = new Date().getTime();
     const totalRequestTime = receivedTime - sentTime;
     const headersSize = Object.keys(response.headers).length;
-    const headersArray = generateArrayObjectFromData(response.headers as any);
+    const headersArray = generateArrayObjectFromData(response.headers as Record<string, string>);
 
     if (typeof response.data === "object") {
       response.data = JSON.stringify(response.data, null, 2);
@@ -40,24 +40,38 @@ async function generateResponseObject(
     ).length;
 
     return responseDataObject;
-  } catch (error: any) {
-    if (error.response) {
+  } catch (error: unknown) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'response' in error &&
+      error.response
+    ) {
+      const err = error as {
+        response: {
+          headers: Record<string, string>;
+          data: unknown;
+          status: number;
+        };
+        message: string;
+        request?: unknown;
+      };
       const receivedTime = new Date().getTime();
       const totalRequestTime = receivedTime - sentTime;
 
-      const headersSize = Object.keys(error.response.headers).length;
-      const headersArray = generateArrayObjectFromData(error.response.headers as any);
+      const headersSize = Object.keys(err.response.headers).length;
+      const headersArray = generateArrayObjectFromData(err.response.headers as Record<string, string>);
 
-      const errorResponseData = typeof error.response.data === 'object' 
-        ? JSON.stringify(error.response.data, null, 2)
-        : error.response.data;
+      const errorResponseData = typeof err.response.data === 'object' 
+        ? JSON.stringify(err.response.data, null, 2)
+        : err.response.data;
 
       const errorObject = {
         type: TYPE.RESPONSE,
         data: errorResponseData,
         headers: headersArray,
         headersLength: headersSize,
-        statusCode: error.response.status,
+        statusCode: err.response.status,
         statusText: MESSAGE.NOT_FOUND,
         requestTime: totalRequestTime,
         responseSize: 0,
@@ -68,20 +82,37 @@ async function generateResponseObject(
       ).length;
 
       return errorObject;
-    } else if (error.request) {
+    } else if (
+      typeof error === 'object' &&
+      error !== null &&
+      'request' in error &&
+      error.request &&
+      'message' in error
+    ) {
+      const err = error as { message: string };
       const errorObject = {
         type: MESSAGE.ERROR,
-        message: error.message,
+        message: err.message,
+      };
+
+      return errorObject;
+    } else if (
+      typeof error === 'object' &&
+      error !== null &&
+      'message' in error
+    ) {
+      const err = error as { message: string };
+      const errorObject = {
+        type: MESSAGE.ERROR,
+        message: err.message,
       };
 
       return errorObject;
     } else {
-      const errorObject = {
+      return {
         type: MESSAGE.ERROR,
-        message: error.message,
+        message: 'Unknown error',
       };
-
-      return errorObject;
     }
   }
 }

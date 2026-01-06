@@ -1,7 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
-  <rect width="128" height="128" rx="16" fill="#0066CC" />
-  <g fill="#fff" transform="translate(24 24)">
-    <path d="M40 8c-17.673 0-32 14.327-32 32s14.327 32 32 32 32-14.327 32-32S57.673 8 40 8zm0 56c-13.255 0-24-10.745-24-24S26.745 16 40 16s24 10.745 24 24-10.745 24-24 24z"/>
-    <path d="M40 24a16 16 0 100 32 16 16 0 000-32z"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Central node -->
+  <circle cx="12" cy="12" r="2.5"/>
+  
+  <!-- Top node -->
+  <circle cx="12" cy="3" r="2"/>
+  <!-- Top connection -->
+  <line x1="12" y1="5" x2="12" y2="9.5"/>
+  
+  <!-- Bottom node -->
+  <circle cx="12" cy="21" r="2"/>
+  <!-- Bottom connection -->
+  <line x1="12" y1="14.5" x2="12" y2="19"/>
+  
+  <!-- Left node -->
+  <circle cx="3" cy="12" r="2"/>
+  <!-- Left connection -->
+  <line x1="5" y1="12" x2="9.5" y2="12"/>
+  
+  <!-- Right node -->
+  <circle cx="21" cy="12" r="2"/>
+  <!-- Right connection -->
+  <line x1="14.5" y1="12" x2="19" y2="12"/>
 </svg>
