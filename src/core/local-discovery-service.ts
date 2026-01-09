@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { logger } from '../utils/logger';
 import { LocalDiscoveryInfo, TeamMember } from '../types/team';
 

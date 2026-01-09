@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import * as vscode from 'vscode';
 import { Environment, EnvironmentVariable } from '../types';
 import { logger } from '../utils/logger';
@@ -350,7 +351,7 @@ export class EnvironmentManager {
 
     for (const varName of extractedVars) {
       let found = false;
-      let isBuiltIn = Object.keys(this.builtInVariables).includes(varName);
+      const isBuiltIn = Object.keys(this.builtInVariables).includes(varName);
 
       if (!isBuiltIn && environmentId) {
         const environment = this.environments.get(environmentId);

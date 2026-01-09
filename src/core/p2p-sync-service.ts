@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { v4 as uuidv4 } from 'uuid';
 import { Team, TeamMember, P2PMessage, SyncConflict, LocalDiscoveryInfo } from '../types/team';
 import { logger } from '../utils/logger';

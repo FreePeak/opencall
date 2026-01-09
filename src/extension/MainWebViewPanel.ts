@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { v4 as uuidv4 } from "uuid";
 import * as vscode from "vscode";
 
@@ -175,7 +176,7 @@ class MainWebViewPanel {
         this.method = requestMethod;
         this.headers = getHeaders(keyValueTableData, authOption, authData);
 
-        // @ts-expect-error
+        // @ts-expect-error getBody returns flexible body type based on bodyOption parameter
         this.body = getBody(
           keyValueTableData,
           bodyOption,

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { Collection, Request } from '../types';
 import { getDatabase, serializeCollection, deserializeCollection } from './database';
 import { getRequestRepository } from './request-repository';

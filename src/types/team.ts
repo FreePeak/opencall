@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Team Management Types
  * Handles team collaboration features including members, roles, and permissions

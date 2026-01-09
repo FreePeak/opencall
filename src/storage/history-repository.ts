@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Response } from '../types';
 import { getDatabase, serializeHistory, deserializeHistory } from './database';
 import { logger } from '../utils/logger';

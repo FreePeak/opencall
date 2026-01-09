@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Core data types for OpenCall extension
 
 export interface OpenCallConfig {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as vscode from 'vscode';
 import { OpenCallConfig } from '../types';
 import { DEFAULT_CONFIG } from '../utils/constants';

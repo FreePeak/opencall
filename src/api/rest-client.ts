@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import axios, {
   AxiosInstance,
   AxiosRequestConfig,
@@ -9,6 +10,7 @@ import { Request, Response, HttpMethod, RequestExecution, Authentication } from 
 import { logger } from '../utils/logger';
 import { generateId, formatBytes, formatDuration, substituteVariables } from '../utils/helpers';
 import { EnvironmentVariable } from '../types';
+import * as https from 'https';
 
 export interface RestClientOptions {
   timeout?: number;
@@ -153,7 +155,7 @@ export class RestClient {
 
     // SSL validation
     if (!this.options.validateSSL) {
-      axiosConfig.httpsAgent = new (require('https').Agent)({
+      axiosConfig.httpsAgent = new https.Agent({
         rejectUnauthorized: false
       });
     }

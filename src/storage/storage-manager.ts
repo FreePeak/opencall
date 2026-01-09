@@ -35,7 +35,7 @@ export class StorageManager {
    */
   async initialize(): Promise<void> {
     try {
-      const requests = await this.getRequests();
+      await this.getRequests();
       const collections = await this.getCollections();
       const environments = await this.getEnvironments();
 

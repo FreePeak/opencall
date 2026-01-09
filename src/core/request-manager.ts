@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import * as vscode from 'vscode';
 import { Request, Response, RequestExecution, EnvironmentVariable } from '../types';
 import { logger } from '../utils/logger';

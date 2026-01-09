@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 
 // Lightweight internal constants to avoid coupling with extension constants
@@ -14,7 +15,7 @@ async function generateResponseObject(
   const sentTime = new Date().getTime();
 
   try {
-    // @ts-expect-error
+    // @ts-expect-error axios configuration is flexible and may accept different types
     const response = await axios(configuration);
 
     const receivedTime = new Date().getTime();

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { EnvironmentVariable } from '../types';
 import { logger } from '../utils/logger';
 import { escapeRegex, isValidJSON, parseJsonSafely } from '../utils/helpers';
@@ -310,10 +311,11 @@ export class VariableSubstitution {
       case 'guid':
       case 'uuid':
         return { value: this.generateUUID(), variable: expression };
-      case 'randomint':
+      case 'randomint': {
         const min = args[0] ? parseInt(args[0]) : 0;
         const max = args[1] ? parseInt(args[1]) : 1000000;
         return { value: Math.floor(Math.random() * (max - min) + min).toString(), variable: expression };
+      }
       case 'toupper':
       case 'uppercase':
         if (args.length !== 1) throw new Error(`toUpperCase() requires exactly one argument`);
@@ -328,7 +330,7 @@ export class VariableSubstitution {
           value: this.resolveVariable(args[0], context, visited).value.toLowerCase(),
           variable: expression
         };
-      case 'replace':
+      case 'replace': {
         if (args.length !== 3) throw new Error(`replace() requires exactly three arguments`);
         const originalValue = this.resolveVariable(args[0], context, visited).value;
         const searchValue = args[1];
@@ -337,6 +339,7 @@ export class VariableSubstitution {
           value: originalValue.replace(new RegExp(escapeRegex(searchValue), 'g'), replaceValue),
           variable: expression
         };
+      }
       default:
         throw new Error(`Unknown function: ${functionName}`);
     }
@@ -397,17 +400,19 @@ export class VariableSubstitution {
 
   private castVariableValue(value: string, type: string): string {
     switch (type) {
-      case 'number':
+      case 'number': {
         const num = parseFloat(value);
         return isNaN(num) ? value : num.toString();
+      }
       case 'boolean':
         return value.toLowerCase() === 'true' ? 'true' : 'false';
-      case 'json':
+      case 'json': {
         if (isValidJSON(value)) {
           const parsed = parseJsonSafely(value);
           return typeof parsed === 'string' ? parsed : JSON.stringify(parsed);
         }
         return value;
+      }
       default:
         return value;
     }

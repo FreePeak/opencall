@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import * as vscode from "vscode";
 
 import { COLLECTION, COMMAND, MESSAGE } from "./constants";

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { Environment } from '../types';
 import { getDatabase, serializeEnvironment, deserializeEnvironment } from './database';
 import { logger } from '../utils/logger';

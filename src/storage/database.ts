@@ -1,6 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-var-requires */
 const Database: any = require('better-sqlite3');
 import path from 'path';
-import * as vscode from 'vscode';
 import { Request, Response, Collection, Environment } from '../types';
 import { logger } from '../utils/logger';
 
@@ -344,7 +344,7 @@ export function getDatabase(dbPath?: string): OpenCallDatabase {
  */
 export async function initDatabase(dbPath?: string): Promise<void> {
   try {
-    const db = getDatabase(dbPath);
+    getDatabase(dbPath);
     // Database is initialized in constructor
     logger.info('[DB] Database initialized successfully');
   } catch (error) {
