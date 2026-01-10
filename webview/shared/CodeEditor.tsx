@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useMemo } from "react";
+import React, { useEffect, useRef, useMemo, useState } from "react";
 import styled from "styled-components";
 
-import { OPTION, REQUEST, RESPONSE } from "../constants";
+import { REQUEST, RESPONSE } from "../constants";
 import ResponsePreview from "../features/Response/Preview/ResponsePreview";
 
-// JSON Syntax Highlighter Component
-const syntaxHighlight = (json: string): string => {
+// JSON Syntax Highlighter Component with Search Support
+const syntaxHighlight = (json: string, searchTerm?: string, currentMatchIndex?: number): string => {
   // First, try to format the JSON if it's valid
   let formatted = json;
   try {
@@ -23,8 +23,8 @@ const syntaxHighlight = (json: string): string => {
     .replace(/>/g, "&gt;");
 
   // Apply syntax highlighting with regex
-  return formatted.replace(
-    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+  let highlighted = formatted.replace(
+    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)(?:[eE][+-]?\d+)?)/g,
     (match) => {
       let cls = "json-number"; // number
       if (/^"/.test(match)) {
@@ -41,11 +41,27 @@ const syntaxHighlight = (json: string): string => {
       return `<span class="${cls}">${match}</span>`;
     }
   );
+
+  // Highlight search matches
+  if (searchTerm && searchTerm.length > 0) {
+    const escapedSearch = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const searchRegex = new RegExp(`(${escapedSearch})`, 'gi');
+    let matchCount = 0;
+    
+    highlighted = highlighted.replace(searchRegex, (match) => {
+      const isCurrentMatch = matchCount === currentMatchIndex;
+      const className = isCurrentMatch ? 'search-match-current' : 'search-match';
+      matchCount++;
+      return `<span class="${className}">${match}</span>`;
+    });
+  }
+
+  return highlighted;
 };
 
 interface ICodeEditorProps {
   language: string;
-  editorOption: any;
+  editorOption: unknown;
   viewOption?: string;
   editorHeight: string;
   requestForm?: boolean;
@@ -68,14 +84,52 @@ const CodeEditor = ({
   handleBeautifyButton,
 }: ICodeEditorProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const [matchCount, setMatchCount] = useState(0);
+  const [showSearch, setShowSearch] = useState(false);
+
+  // Calculate match count
+  useEffect(() => {
+    if (searchTerm.length > 0) {
+      const escapedSearch = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(escapedSearch, 'gi');
+      const matches = codeEditorValue.match(searchRegex);
+      setMatchCount(matches ? matches.length : 0);
+      setCurrentMatchIndex(0);
+    } else {
+      setMatchCount(0);
+    }
+  }, [searchTerm, codeEditorValue]);
+
+  // Handle keyboard shortcut for search (Cmd+F / Ctrl+F)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        e.preventDefault();
+        setShowSearch(true);
+      } else if (e.key === 'Escape') {
+        setShowSearch(false);
+        setSearchTerm("");
+      } else if ((e.metaKey || e.ctrlKey) && e.key === 'g') {
+        e.preventDefault();
+        if (showSearch && matchCount > 0) {
+          setCurrentMatchIndex((prev) => (prev + 1) % matchCount);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showSearch, matchCount]);
 
   // Memoize the highlighted JSON for Pretty view
   const highlightedCode = useMemo(() => {
     if (viewOption === RESPONSE.PRETTY && (language === "json" || language === "javascript")) {
-      return syntaxHighlight(codeEditorValue);
+      return syntaxHighlight(codeEditorValue, searchTerm, currentMatchIndex);
     }
     return null;
-  }, [codeEditorValue, viewOption, language]);
+  }, [codeEditorValue, viewOption, language, searchTerm, currentMatchIndex]);
 
   useEffect(() => {
     if (shouldBeautifyEditor && requestForm && textareaRef.current) {
@@ -111,6 +165,21 @@ const CodeEditor = ({
   if (viewOption === RESPONSE.PRETTY && highlightedCode) {
     return (
       <EditorWrapper>
+        {showSearch && (
+          <SearchContainer>
+            <SearchInput
+              type="text"
+              placeholder="Search in response..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              autoFocus
+            />
+            <SearchInfo>
+              {searchTerm && matchCount > 0 ? `${currentMatchIndex + 1}/${matchCount}` : ''}
+            </SearchInfo>
+            <SearchButton onClick={() => setShowSearch(false)}>✕</SearchButton>
+          </SearchContainer>
+        )}
         <SyntaxHighlightedCode
           style={{ height: editorHeight }}
           dangerouslySetInnerHTML={{ __html: highlightedCode }}
@@ -122,6 +191,21 @@ const CodeEditor = ({
   // Raw mode (editable textarea)
   return (
     <EditorWrapper>
+      {showSearch && (
+        <SearchContainer>
+          <SearchInput
+            type="text"
+            placeholder="Search in response..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            autoFocus
+          />
+          <SearchInfo>
+            {searchTerm && matchCount > 0 ? `${currentMatchIndex + 1}/${matchCount}` : ''}
+          </SearchInfo>
+          <SearchButton onClick={() => setShowSearch(false)}>✕</SearchButton>
+        </SearchContainer>
+      )}
       <SimpleTextEditor
         ref={textareaRef}
         value={codeEditorValue}
@@ -136,6 +220,58 @@ const CodeEditor = ({
 
 const EditorWrapper = styled.div`
   margin-top: 2rem;
+`;
+
+const SearchContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background-color: var(--vscode-editor-background, #1e1e1e);
+  border-bottom: 1px solid var(--vscode-editorBorder, #333);
+  border-radius: 4px 4px 0 0;
+`;
+
+const SearchInput = styled.input`
+  flex: 1;
+  padding: 0.4rem 0.7rem;
+  font-size: 13px;
+  background-color: var(--vscode-input-background, #3c3c3c);
+  color: var(--vscode-input-foreground, #d4d4d4);
+  border: 1px solid var(--vscode-inputBorder, #555);
+  border-radius: 3px;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--vscode-focusBorder, #007acc);
+    box-shadow: 0 0 0 1px var(--vscode-focusBorder, #007acc);
+  }
+
+  &::placeholder {
+    color: var(--vscode-input-placeholderForeground, #888);
+  }
+`;
+
+const SearchInfo = styled.span`
+  color: var(--vscode-input-foreground, #d4d4d4);
+  font-size: 12px;
+  white-space: nowrap;
+  min-width: 3rem;
+  text-align: right;
+`;
+
+const SearchButton = styled.button`
+  padding: 0.3rem 0.5rem;
+  background-color: transparent;
+  color: var(--vscode-input-foreground, #d4d4d4);
+  border: 1px solid var(--vscode-inputBorder, #555);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 14px;
+  
+  &:hover {
+    background-color: var(--vscode-button-hoverBackground, #3e3e42);
+  }
 `;
 
 const SyntaxHighlightedCode = styled.pre`
@@ -172,6 +308,17 @@ const SyntaxHighlightedCode = styled.pre`
 
   .json-null {
     color: #569cd6;
+  }
+
+  .search-match {
+    background-color: #7a4a1e;
+    color: inherit;
+  }
+
+  .search-match-current {
+    background-color: #ff6b35;
+    color: #000;
+    font-weight: bold;
   }
 `;
 
