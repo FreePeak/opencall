@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import * as vscode from 'vscode';
-import { Collection, EnvironmentVariable } from '../types';
+import { Collection, EnvironmentVariable, Request } from '../types';
 import { logger } from '../utils/logger';
 import { generateId, deepClone } from '../utils/helpers';
+import { StorageManager } from '../storage/storage-manager';
 
 export interface CollectionManagerOptions {
   maxCollections?: number;
@@ -13,6 +14,7 @@ export class CollectionManager {
   private collections: Map<string, Collection> = new Map();
   private rootCollections: string[] = [];
   private options: CollectionManagerOptions;
+  private storageManager: StorageManager | null = null;
 
   // Events
   private _onCollectionCreated = new vscode.EventEmitter<Collection>();
@@ -42,6 +44,14 @@ export class CollectionManager {
 
   get onCollectionMoved(): vscode.Event<{ collectionId: string; newParentId?: string }> {
     return this._onCollectionMoved.event;
+  }
+
+  /**
+   * Set storage manager for persistence (dependency injection)
+   */
+  setStorageManager(storageManager: StorageManager): void {
+    this.storageManager = storageManager;
+    logger.info('[CollectionManager] Storage manager connected');
   }
 
   async createCollection(
@@ -313,28 +323,122 @@ export class CollectionManager {
 
   private async saveCollection(collection: Collection): Promise<void> {
     try {
-      // TODO: Implement with storage layer
-      logger.debug('saveCollection: will be implemented with storage layer');
+      if (!this.storageManager) {
+        logger.warn('[CollectionManager] Storage manager not set, skipping save');
+        return;
+      }
+      await this.storageManager.saveCollection(collection);
+      logger.debug(`[CollectionManager] Saved collection: ${collection.id}`);
     } catch (error) {
       logger.error('Failed to save collection', error);
+      throw error;
     }
   }
 
   private async deleteCollectionData(collectionId: string): Promise<void> {
     try {
-      // TODO: Implement with storage layer
-      logger.debug('deleteCollectionData: will be implemented with storage layer');
+      if (!this.storageManager) {
+        logger.warn('[CollectionManager] Storage manager not set, skipping delete');
+        return;
+      }
+      await this.storageManager.deleteCollection(collectionId);
+      logger.debug(`[CollectionManager] Deleted collection data: ${collectionId}`);
     } catch (error) {
       logger.error('Failed to delete collection data', error);
+      throw error;
     }
   }
 
   async loadCollections(): Promise<void> {
     try {
-      // TODO: Implement with storage layer
-      logger.debug('loadCollections: will be implemented with storage layer');
+      if (!this.storageManager) {
+        logger.warn('[CollectionManager] Storage manager not set, skipping load');
+        return;
+      }
+
+      const collections = await this.storageManager.getCollections();
+      logger.info(`[CollectionManager] Loading ${collections.length} collections from storage`);
+
+      // Clear current state
+      this.collections.clear();
+      this.rootCollections = [];
+
+      // Build collections map and root list
+      for (const collection of collections) {
+        this.collections.set(collection.id, collection);
+        if (!collection.parentId) {
+          this.rootCollections.push(collection.id);
+        }
+      }
+
+      logger.info(`[CollectionManager] Loaded ${this.collections.size} collections`);
     } catch (error) {
       logger.error('Failed to load collections', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add a request to a collection
+   */
+  async addRequestToCollection(collectionId: string, request: Request): Promise<boolean> {
+    try {
+      const collection = this.collections.get(collectionId);
+      if (!collection) {
+        logger.warn(`[CollectionManager] Collection not found: ${collectionId}`);
+        return false;
+      }
+
+      // Check if request already exists in items
+      const existingIndex = collection.items.findIndex(item => item.id === request.id);
+      if (existingIndex >= 0) {
+        // Update existing request
+        collection.items[existingIndex] = request;
+      } else {
+        // Add new request
+        collection.items.push(request);
+      }
+
+      collection.updatedAt = new Date();
+      await this.saveCollection(collection);
+
+      logger.info(`[CollectionManager] Added request ${request.id} to collection ${collectionId}`);
+      this._onCollectionUpdated.fire(collection);
+      return true;
+    } catch (error) {
+      logger.error(`[CollectionManager] Failed to add request to collection`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Remove a request from a collection
+   */
+  async removeRequestFromCollection(collectionId: string, requestId: string): Promise<boolean> {
+    try {
+      const collection = this.collections.get(collectionId);
+      if (!collection) {
+        logger.warn(`[CollectionManager] Collection not found: ${collectionId}`);
+        return false;
+      }
+
+      const initialLength = collection.items.length;
+      collection.items = collection.items.filter(item => item.id !== requestId);
+
+      if (collection.items.length === initialLength) {
+        // Request was not in collection
+        return false;
+      }
+
+      collection.updatedAt = new Date();
+      await this.saveCollection(collection);
+
+      logger.info(`[CollectionManager] Removed request ${requestId} from collection ${collectionId}`);
+      this._onCollectionUpdated.fire(collection);
+      return true;
+    } catch (error) {
+      logger.error(`[CollectionManager] Failed to remove request from collection`, error);
+      return false;
     }
   }
 

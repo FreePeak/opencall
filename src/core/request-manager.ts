@@ -4,6 +4,7 @@ import { Request, Response, RequestExecution, EnvironmentVariable } from '../typ
 import { logger } from '../utils/logger';
 import { generateId, deepClone, substituteVariables } from '../utils/helpers';
 import { RestClient, RequestConfig } from '../api';
+import { StorageManager } from '../storage/storage-manager';
 
 export interface RequestManagerOptions {
   maxConcurrentRequests?: number;
@@ -19,6 +20,8 @@ export class RequestManager {
   private activeRequests: Set<string> = new Set();
   private options: RequestManagerOptions;
   private disposables: vscode.Disposable[] = [];
+  private storageManager: StorageManager | null = null;
+  private collectionManager: any = null;
 
   // Events
   private _onRequestExecuted = new vscode.EventEmitter<RequestExecution>();
@@ -50,6 +53,22 @@ export class RequestManager {
     return this._onRequestFailed.event;
   }
 
+  /**
+   * Set storage manager for persistence (dependency injection)
+   */
+  setStorageManager(storageManager: StorageManager): void {
+    this.storageManager = storageManager;
+    logger.info('[RequestManager] Storage manager connected');
+  }
+
+  /**
+   * Set collection manager for adding requests to collections (dependency injection)
+   */
+  setCollectionManager(collectionManager: any): void {
+    this.collectionManager = collectionManager;
+    logger.info('[RequestManager] Collection manager connected');
+  }
+
   async createRequest(
     name: string,
     method: string,
@@ -74,7 +93,12 @@ export class RequestManager {
     };
 
     this.requests.set(request.id, request);
-    this.saveRequest(request);
+    await this.saveRequest(request);
+
+    // Add request to collection if collectionId provided
+    if (collectionId && this.collectionManager) {
+      await this.collectionManager.addRequestToCollection(collectionId, request);
+    }
 
     logger.info(`Created new request: ${name} (${request.method} ${url})`);
     return request;
@@ -89,7 +113,12 @@ export class RequestManager {
 
     const updatedRequest = { ...request, ...updates, updatedAt: new Date() };
     this.requests.set(requestId, updatedRequest);
-    this.saveRequest(updatedRequest);
+    await this.saveRequest(updatedRequest);
+
+    // Update request in collection if it belongs to one
+    if (updatedRequest.collectionId && this.collectionManager) {
+      await this.collectionManager.addRequestToCollection(updatedRequest.collectionId, updatedRequest);
+    }
 
     logger.info(`Updated request: ${updatedRequest.name}`);
     return updatedRequest;
@@ -100,6 +129,11 @@ export class RequestManager {
     if (!request) {
       logger.warn(`Request not found: ${requestId}`);
       return false;
+    }
+
+    // Remove from collection if it belongs to one
+    if (request.collectionId && this.collectionManager) {
+      await this.collectionManager.removeRequestFromCollection(request.collectionId, requestId);
     }
 
     this.requests.delete(requestId);
@@ -231,28 +265,54 @@ export class RequestManager {
 
   private async saveRequest(request: Request): Promise<void> {
     try {
-      // TODO: Implement with storage layer
-      logger.debug('saveRequest: will be implemented with storage layer');
+      if (!this.storageManager) {
+        logger.warn('[RequestManager] Storage manager not set, skipping save');
+        return;
+      }
+      await this.storageManager.saveRequest(request);
+      logger.debug(`[RequestManager] Saved request: ${request.id}`);
     } catch (error) {
       logger.error('Failed to save request', error);
+      throw error;
     }
   }
 
   private async deleteRequestData(requestId: string): Promise<void> {
     try {
-      // TODO: Implement with storage layer
-      logger.debug('deleteRequestData: will be implemented with storage layer');
+      if (!this.storageManager) {
+        logger.warn('[RequestManager] Storage manager not set, skipping delete');
+        return;
+      }
+      await this.storageManager.deleteRequest(requestId);
+      logger.debug(`[RequestManager] Deleted request data: ${requestId}`);
     } catch (error) {
       logger.error('Failed to delete request data', error);
+      throw error;
     }
   }
 
   async loadRequests(): Promise<void> {
     try {
-      // TODO: Implement with storage layer
-      logger.debug('loadRequests: will be implemented with storage layer');
+      if (!this.storageManager) {
+        logger.warn('[RequestManager] Storage manager not set, skipping load');
+        return;
+      }
+
+      const requests = await this.storageManager.getRequests();
+      logger.info(`[RequestManager] Loading ${requests.length} requests from storage`);
+
+      // Clear current state
+      this.requests.clear();
+
+      // Build requests map
+      for (const request of requests) {
+        this.requests.set(request.id, request);
+      }
+
+      logger.info(`[RequestManager] Loaded ${this.requests.size} requests`);
     } catch (error) {
       logger.error('Failed to load requests', error);
+      throw error;
     }
   }
 

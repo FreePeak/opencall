@@ -64,6 +64,22 @@ export async function activate(context: vscode.ExtensionContext) {
   const localDiscoveryService = new LocalDiscoveryService();
   logger.info("[Extension] Local discovery service initialized");
 
+  // Connect managers to storage layer
+  collectionManager.setStorageManager(storageManager);
+  requestManager.setStorageManager(storageManager);
+  requestManager.setCollectionManager(collectionManager);
+  logger.info("[Extension] Managers connected to storage layer");
+
+  // Load existing data from storage
+  try {
+    await collectionManager.loadCollections();
+    await requestManager.loadRequests();
+    logger.info("[Extension] Data loaded from storage successfully");
+  } catch (error) {
+    logger.error("[Extension] Failed to load data from storage", error);
+    vscode.window.showWarningMessage("Failed to load saved data. Starting with empty state.");
+  }
+
   // Register all services in ServiceRegistry
   const registry = ServiceRegistry.getInstance();
   registry.registerStorageManager(storageManager);
