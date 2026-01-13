@@ -13,6 +13,8 @@ import {
 import { IRequestHeaderInformation, IRequestObjectType, IUserRequestSidebarState } from "./utils/type";
 import SidebarWebViewPanel from "./SidebarWebViewPanel";
 import ExtentionStateManager from "./ExtensionStateManger";
+import { RequestManager } from "../core/request-manager";
+import { StorageManager } from "../storage/storage-manager";
 
 class MainWebViewPanel {
   private url: string = "";
@@ -23,15 +25,21 @@ class MainWebViewPanel {
   private extensionUri;
   public stateManager;
   public sidebarWebViewPanel;
+  private requestManager: RequestManager;
+  private storageManager: StorageManager;
 
   constructor(
     extensionUri: vscode.Uri,
     stateManager: ExtentionStateManager,
     sidebarWebViewPanel: SidebarWebViewPanel,
+    requestManager: RequestManager,
+    storageManager: StorageManager,
   ) {
     this.extensionUri = extensionUri;
     this.stateManager = stateManager;
     this.sidebarWebViewPanel = sidebarWebViewPanel;
+    this.requestManager = requestManager;
+    this.storageManager = storageManager;
   }
 
   initializeWebView() {

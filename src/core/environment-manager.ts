@@ -205,6 +205,7 @@ export class EnvironmentManager {
 
   async addVariable(
     environmentId: string,
+    key: string,
     variable: Omit<EnvironmentVariable, 'key'>
   ): Promise<EnvironmentVariable | null> {
     const environment = this.environments.get(environmentId);
@@ -218,7 +219,7 @@ export class EnvironmentManager {
     }
 
     const newVariable: EnvironmentVariable = {
-      key: generateId(), // Will be replaced with actual key
+      key,
       ...variable
     };
 

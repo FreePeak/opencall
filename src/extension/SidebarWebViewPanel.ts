@@ -5,16 +5,31 @@ import { CATEGORY, COLLECTION, COMMAND, MESSAGE, TYPE } from "./constants";
 import { filterObjectKey, generateResponseObject, getNonce } from "./utils";
 import ExtentionStateManager from "./ExtensionStateManger";
 import { IUserRequestSidebarState } from "./utils/type";
+import { StorageManager } from "../storage/storage-manager";
+import { CollectionManager } from "../core/collection-manager";
+import { EnvironmentManager } from "../core/environment-manager";
 
 class SidebarWebViewPanel {
   private sidebarWebview: vscode.WebviewView | null = null;
   private extensionUri;
   public mainWebViewPanel: vscode.WebviewPanel | null = null;
   public stateManager;
+  private storageManager: StorageManager;
+  private collectionManager: CollectionManager;
+  private environmentManager: EnvironmentManager;
 
-  constructor(extensionUri: vscode.Uri, stateManager: ExtentionStateManager) {
+  constructor(
+    extensionUri: vscode.Uri,
+    stateManager: ExtentionStateManager,
+    storageManager: StorageManager,
+    collectionManager: CollectionManager,
+    environmentManager: EnvironmentManager
+  ) {
     this.extensionUri = extensionUri;
     this.stateManager = stateManager;
+    this.storageManager = storageManager;
+    this.collectionManager = collectionManager;
+    this.environmentManager = environmentManager;
   }
 
   resolveWebviewView(webviewView: vscode.WebviewView): void | Thenable<void> {
