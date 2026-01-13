@@ -6,13 +6,25 @@
   --input-margin-horizontal: 0;
 }
 
+html {
+  height: 100%;
+  overflow: auto;
+}
+
 body {
+  min-height: 100%;
   padding: 0 var(--container-padding);
   color: var(--vscode-foreground);
   font-size: var(--vscode-font-size);
   font-weight: var(--vscode-font-weight);
   font-family: var(--vscode-font-family);
   background-color: var(--vscode-editor-background);
+  overflow: auto;
+}
+
+#root {
+  min-height: 100vh;
+  overflow: visible;
 }
 
 ol,

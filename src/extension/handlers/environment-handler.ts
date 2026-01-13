@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Environment, EnvironmentVariable } from '../../types';
+import { EnvironmentVariable } from '../../types';
 import ServiceRegistry from '../ServiceRegistry';
 import { logger } from '../../utils/logger';
 

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Request, HttpMethod, RequestExecution } from '../../types';
+import { Request, RequestExecution } from '../../types';
 import ServiceRegistry from '../ServiceRegistry';
 import { logger } from '../../utils/logger';
 
@@ -20,7 +20,7 @@ export class RequestHandler {
   /**
    * Create a new request
    */
-  async handleCreateRequest(): Promise<void> {
+  async handleCreateRequest(parentId?: string): Promise<void> {
     try {
       const name = await vscode.window.showInputBox({
         prompt: 'Enter request name',
@@ -49,11 +49,11 @@ export class RequestHandler {
         return;
       }
 
-      const request = await this.requestManager.createRequest(
+      await this.requestManager.createRequest(
         name,
         method,
         url,
-        'default'
+        parentId || 'default'
       );
 
       vscode.window.showInformationMessage(`Request "${name}" created successfully!`);

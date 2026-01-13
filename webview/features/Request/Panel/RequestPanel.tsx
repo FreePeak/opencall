@@ -62,7 +62,7 @@ const RequestPanel = () => {
 
 const RequestPanelWrapper = styled.div`
   margin: 5.5rem 5rem 1.5rem 5rem;
-  overflow: hidden;
+  overflow: visible;
 `;
 
 const RequestMainForm = styled.form`

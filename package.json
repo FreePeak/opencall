@@ -81,6 +81,26 @@
         "command": "opencall.open",
         "category": "OpenCall",
         "title": "Open API Client"
+      },
+      {
+        "command": "opencall.addFolder",
+        "category": "OpenCall",
+        "title": "Add Folder"
+      },
+      {
+        "command": "opencall.addRequestToCollection",
+        "category": "OpenCall",
+        "title": "Add Request"
+      },
+      {
+        "command": "opencall.renameCollection",
+        "category": "OpenCall",
+        "title": "Rename"
+      },
+      {
+        "command": "opencall.duplicateRequest",
+        "category": "OpenCall",
+        "title": "Duplicate Request"
       }
     ],
     "viewsContainers": {
@@ -94,6 +114,11 @@
     },
     "views": {
       "opencall": [
+        {
+          "id": "opencall.collections",
+          "name": "Collections",
+          "contextualTitle": "OpenCall Collections"
+        },
         {
           "type": "webview",
           "id": "opencall.collectionMenu",
@@ -113,6 +138,11 @@
           "command": "opencall.createRequest",
           "when": "view == opencall.collectionMenu",
           "group": "navigation"
+        },
+        {
+          "command": "opencall.createCollection",
+          "when": "view == opencall.collections",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -125,6 +155,61 @@
           "command": "opencall.exportCollection",
           "when": "view == opencall.collectionMenu && viewItem == collection",
           "group": "1_opencall"
+        },
+        {
+          "command": "opencall.addRequestToCollection",
+          "when": "view == opencall.collections && viewItem == collection",
+          "group": "1_opencall@1"
+        },
+        {
+          "command": "opencall.addFolder",
+          "when": "view == opencall.collections && viewItem == collection",
+          "group": "1_opencall@2"
+        },
+        {
+          "command": "opencall.addRequestToCollection",
+          "when": "view == opencall.collections && viewItem == folder",
+          "group": "1_opencall@1"
+        },
+        {
+          "command": "opencall.addFolder",
+          "when": "view == opencall.collections && viewItem == folder",
+          "group": "1_opencall@2"
+        },
+        {
+          "command": "opencall.renameCollection",
+          "when": "view == opencall.collections && viewItem == collection",
+          "group": "2_edit@1"
+        },
+        {
+          "command": "opencall.renameCollection",
+          "when": "view == opencall.collections && viewItem == folder",
+          "group": "2_edit@1"
+        },
+        {
+          "command": "opencall.deleteCollection",
+          "when": "view == opencall.collections && viewItem == collection",
+          "group": "3_delete"
+        },
+        {
+          "command": "opencall.deleteCollection",
+          "when": "view == opencall.collections && viewItem == folder",
+          "group": "3_delete"
+        },
+        {
+          "command": "opencall.sendRequest",
+          "when": "view == opencall.collections && viewItem == request",
+          "group": "inline"
+        },
+        {
+          "command": "opencall.duplicateRequest",
+          "when": "view == opencall.collections && viewItem == request",
+          "group": "2_edit@1"
+        },
+        {
+          "command": "opencall.deleteRequest",
+          "when": "view == opencall.collections && viewItem == request",
+          "group": "3_delete"
         }
       ],
       "commandPalette": [

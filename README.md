@@ -4,203 +4,302 @@ A VSCode extension that provides comprehensive API testing capabilities with pee
 
 ## Features
 
-### Core Functionality
-- **REST API Client**: Full HTTP client with GET, POST, PUT, DELETE, PATCH methods
+- **REST API Client**: Full HTTP client with all standard methods
 - **gRPC Client**: Native gRPC support with proto file parsing
-- **Swagger/OpenAPI Client**: Import and test OpenAPI specifications
-- **Request Collections**: Organize requests in collections and folders
-- **Environment Variables**: Support for multiple environments with variable substitution
-- **Test Scripts**: JavaScript-based test execution for responses
-- **History & Favorites**: Track request history and mark favorite requests for quick access
+- **OpenAPI/Swagger**: Import and test OpenAPI specifications
+- **Request Collections**: Organize requests in collections and folders (Postman-like)
+- **Team Collaboration**: P2P synchronization with role-based access control
+- **Environment Variables**: Multiple environments with variable substitution
+- **Import/Export**: Postman v2.0/v2.1 and OpenAPI support
 
-### Team Collaboration & Management
-- **Team Management**: Create teams with unlimited members
-- **Role-Based Access**: Admin, Lead, and Member roles with granular permissions
-  - **Admin**: Full control over team settings, member management, and roles
-  - **Lead**: Can add/remove members and manage shared resources
-  - **Member**: Full access to shared collections and environments
-- **Full Resource Access**: All team members have complete access to shared collections and environments
-- **Real-time Sync**: Automatic synchronization of changes across team members
-
-### P2P Synchronization & Discovery
-- **Local Network P2P**: Direct peer-to-peer synchronization on internal networks
-- **mDNS Discovery**: Automatic peer discovery on local network without external servers
-- **Real-time Updates**: Changes sync instantly among connected team members
-- **Conflict Resolution**: Automatic detection and resolution of conflicting changes
-- **Offline Support**: Work offline and sync when reconnected
-- **Selective Sync**: Choose which collections to share with specific teams
-
-### Import/Export Features
-- **Postman v2.0 & v2.1**: Full support for Postman collection import with all request details
-  - Headers, authentication, body (raw, form-data, urlencoded, GraphQL)
-  - Pre-request scripts and test scripts
-  - Nested folders and request organization
-- **OpenAPI/Swagger**: Export and import OpenAPI specifications
-- **Custom Format**: Export to OpenCall JSON format for version control and sharing
+---
 
 ## Quick Start
 
-1. Install the extension from VSCode Marketplace
-2. Open the command palette (Cmd+Shift+P / Ctrl+Shift+P)
-3. Type "OpenCall: Open API Client" to launch the client
-4. Create your first request or import from Postman/Swagger
-
-## Installation
-
-### From VSCode Marketplace
-1. Open VSCode
-2. Go to Extensions (Ctrl+Shift+X)
-3. Search for "OpenCall"
-4. Click Install
-
-### From Source
+### 1. Install Dependencies
 ```bash
-git clone https://github.com/opencall/opencall.git
-cd opencall
 npm install
-npm run compile
 ```
 
-## P2P Setup
+### 2. Build the Extension
+```bash
+make build              # Build extension + webview
+npm run compile         # TypeScript compilation only
+npm run watch           # Watch mode for development
+```
 
-### Starting a P2P Session
-1. Open OpenCall panel
-2. Click "Start P2P Session" in the collaboration tab
-3. Share your peer ID with team members
-4. Team members can connect using your ID
+### 3. Install to Editors
+```bash
+# Install to all editors (VS Code, Cursor, Antigravity)
+make install-all
 
-### Joining a P2P Session
-1. Get peer ID from session creator
-2. Click "Join Session"
-3. Enter the peer ID
-4. Select collections to sync
+# Or install to specific editor
+make install-vscode
+make install-cursor
+make install-antigravity
+```
 
-## Development
+### 4. Development Workflow
+```bash
+# Recommended: Reinstall after making changes
+make reinstall-all      # Uninstall → package → install all
 
-See [Development Guide](docs/development.md) for detailed setup instructions.
+# Or for specific editor
+make reinstall-vscode
+make reinstall-cursor
+make reinstall-antigravity
+```
 
-## Architecture
+---
 
-See [Architecture Documentation](docs/architecture.md) for system design details.
+## Makefile Commands Reference
 
-## API Documentation
+### Build Commands
 
-See [API Reference](docs/api.md) for extension API documentation.
+| Command | Description |
+|---------|-------------|
+| `make build` | Build extension and webview bundles |
+| `make compile` | Compile TypeScript only |
+| `make watch` | Watch mode for development |
+| `make build:extension` | Build extension bundle only |
+| `make build:webview` | Build webview bundle only |
+| `make watch:webview` | Watch webview changes |
+| `make clean` | Remove build artifacts (out/, dist/) |
 
-## Project Roadmap
+### Package Commands
 
-### ✅ Completed (Phase 1-2)
-- Extension skeleton with VSCode integration
-- Command registration system
-- VSCode-compatible storage (GlobalState)
-- Basic export/import functionality for collections and environments
-- Extension packaging and distribution
-- Default data initialization
+| Command | Description |
+|---------|-------------|
+| `make package` | Build + create VSIX package |
+| `make clean-package` | Remove old VSIX and package new one |
 
-### 🔄 Phase 3: Core Request Management (High Priority)
-- [ ] Request Form UI for creation/editing
-- [ ] HTTP Method Selection dropdown
-- [ ] URL Input with validation and history
-- [ ] Headers Editor with auto-suggest
-- [ ] Body Editor (raw text, JSON, form-data, binary)
-- [ ] Auth Editor (Basic, Bearer Token, API Key)
-- [ ] Query Parameters Editor
-- [ ] HTTP Client implementation (axios-based)
-- [ ] Response Viewer with pretty-printing
-- [ ] Response Headers display
-- [ ] Response Timing metrics
-- [ ] Status Code display with color coding
-- [ ] Save/Load Request functionality
-- [ ] Request History tracking
-- [ ] Duplicate Request feature
+### Installation Commands
 
-### 📋 Phase 4: Collection Management (High Priority)
-- [ ] Collection Tree View
-- [ ] Nested Folder Support
-- [ ] Drag & Drop reordering
-- [ ] Collection Properties editing
-- [ ] Bulk Operations
-- [ ] Create new collections
-- [ ] Rename/Delete collections
-- [ ] Move requests between collections
+| Command | Description |
+|---------|-------------|
+| `make install-vscode` | Install to VS Code only |
+| `make install-cursor` | Install to Cursor only |
+| `make install-antigravity` | Install to Antigravity only |
+| `make install-all` | Install to all available editors |
 
-### 🌍 Phase 5: Environment Management (Medium Priority)
-- [ ] Environment Editor UI
-- [ ] Variable Types support (string, number, boolean, JSON)
-- [ ] Environment Switching
-- [ ] Variable Resolution ({{variable}} substitution)
-- [ ] Environment Scoping
-- [ ] Secret Variables (encrypted)
-- [ ] Environment Templates
-- [ ] Environment Export/Import
+### Reinstallation Commands (Recommended for Testing)
 
-### ✅ Phase 6: Testing & Validation (Medium Priority)
-- [ ] Pre-request Scripts
-- [ ] Post-response Tests
-- [ ] Test Results display
-- [ ] Test Assertions library
-- [ ] Schema Validation (JSON Schema)
-- [ ] Response Assertions
-- [ ] Performance Tests
+| Command | Description |
+|---------|-------------|
+| `make reinstall-vscode` | Uninstall → package → install (VS Code) |
+| `make reinstall-cursor` | Uninstall → package → install (Cursor) |
+| `make reinstall-antigravity` | Uninstall → package → install (Antigravity) |
+| `make reinstall-all` | Uninstall all → package → install all |
 
-### 🚀 Phase 7: Advanced Request Features (Medium Priority)
-- [ ] Request Templates
-- [ ] Cookie Management
-- [ ] Redirect Following
-- [ ] SSL/TLS Options
-- [ ] Proxy Support
-- [ ] Response Export
-- [ ] Response Search
-- [ ] Response Comparison
-- [ ] Response History
+### Uninstallation Commands
 
-### 🔧 Phase 8: API Specification Support (Low Priority)
-- [ ] OpenAPI Import
-- [ ] Swagger 2.0 Import
-- [ ] Schema Validation
-- [ ] Auto-complete
-- [ ] Interactive API Docs
-- [ ] Request Generation from docs
+| Command | Description |
+|---------|-------------|
+| `make uninstall-vscode` | Uninstall from VS Code |
+| `make uninstall-cursor` | Uninstall from Cursor |
+| `make uninstall-antigravity` | Uninstall from Antigravity |
+| `make uninstall-all` | Uninstall from all editors |
 
-### 🌐 Phase 9: P2P Synchronization (Future)
-- Real-time peer-to-peer collaboration
-- WebRTC-based synchronization
-- Conflict detection and resolution
-- Selective sync for collections
-- Extension points already defined
+### Status & Information Commands
 
-## Implementation Tasks
+| Command | Description |
+|---------|-------------|
+| `make status` | Show complete status (editors + extensions + VSIX) |
+| `make check-editors` | Check which editors are installed |
+| `make extensions-all` | List OpenCall in all editors |
+| `make version-all` | Show all editor versions |
 
-See [Implementation Todos](docs/implementation-todos.md) for detailed task breakdown by phase.
+### Linting Commands
 
-### Current Focus Areas:
-1. **Phase 1: Core Infrastructure** - Extension entry point, configuration management, storage layer
-2. **Phase 2: Tree View Providers** - Explorer, history, and P2P session UI
-3. **Phase 3: Request Management** - Core API testing functionality
+| Command | Description |
+|---------|-------------|
+| `make lint` | Run ESLint on codebase |
+| `make lint-fix` | Auto-fix linting issues |
+
+### Testing Commands
+
+| Command | Description |
+|---------|-------------|
+| `make test` | Run test suite |
+| `make test-watch` | Run tests in watch mode |
+
+---
+
+## Development Workflow
+
+### Making Changes
+
+1. **Edit code** in `src/` or `webview/`
+2. **Check TypeScript**: `npm run compile`
+3. **Build**: `make build`
+4. **Reinstall**: `make reinstall-all`
+5. **Test** in VS Code, Cursor, or Antigravity
+6. **Verify status**: `make status`
+
+### Typical Development Session
+
+```bash
+# Start watch mode in one terminal
+make watch
+
+# In another terminal, reinstall when ready to test
+make reinstall-all
+
+# Check installation status
+make status
+
+# Open VS Code and press F5 to launch Extension Development Host
+code .
+```
+
+### Before Committing
+
+```bash
+# Ensure clean build
+npm run compile        # 0 errors
+make lint              # No linting errors
+make build             # Successful build
+make reinstall-all     # Test installation
+```
+
+---
+
+## Troubleshooting
+
+### Extension Not Appearing
+
+```bash
+# Check if editors are installed
+make check-editors
+
+# Check if extension is installed
+make extensions-all
+
+# Try reinstalling
+make reinstall-all
+
+# Check status
+make status
+```
+
+### Build Errors
+
+```bash
+# Clean and rebuild
+make clean
+npm install
+make build
+```
+
+### TypeScript Errors
+
+```bash
+# Check for errors
+npm run compile
+
+# If errors persist, check:
+# - src/types/*.ts (type definitions)
+# - tsconfig.json (TypeScript config)
+```
+
+---
+
+## Project Structure
+
+```
+opencall/
+├── src/
+│   ├── extension/          # VSCode extension code
+│   │   ├── extension.ts    # Main entry point
+│   │   ├── handlers/       # Command handlers
+│   │   ├── CollectionTreeProvider.ts
+│   │   └── CollectionTreeItem.ts
+│   ├── core/               # Business logic
+│   │   ├── collection-manager.ts
+│   │   ├── request-manager.ts
+│   │   └── environment-manager.ts
+│   ├── storage/            # Persistence layer
+│   ├── api/                # API clients (REST, gRPC)
+│   ├── types/              # TypeScript types
+│   └── utils/              # Utilities
+├── webview/                # React UI
+│   ├── features/           # Feature components
+│   ├── pages/              # Page components
+│   └── shared/             # Shared UI utilities
+├── out/                    # Compiled extension
+├── dist/                   # Bundled webview
+├── docs/                   # Documentation
+│   ├── TODO.md             # Development roadmap
+│   ├── PHASE1_WEEK1_PLAN.md
+│   ├── VALIDATION_GUIDE.md
+│   └── ...
+├── Makefile                # Build commands
+├── package.json            # Extension manifest
+└── README.md               # This file
+```
+
+---
+
+## Documentation
+
+### Development Documentation
+- **[docs/TODO.md](docs/TODO.md)** - Current development roadmap and task list
+- **[docs/PHASE1_WEEK1_PLAN.md](docs/PHASE1_WEEK1_PLAN.md)** - Detailed Week 1 implementation plan
+- **[docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)** - Overall project roadmap (all phases)
+- **[docs/development.md](docs/development.md)** - Development setup guide
+- **[docs/architecture.md](docs/architecture.md)** - System architecture
+
+### Testing & Validation
+- **[docs/VALIDATION_GUIDE.md](docs/VALIDATION_GUIDE.md)** - Comprehensive testing procedures
+- **[docs/QUICK_VALIDATION.md](docs/QUICK_VALIDATION.md)** - 5-minute validation guide
+
+### Makefile & Installation
+- **[docs/MAKEFILE_MULTI_EDITOR_GUIDE.md](docs/MAKEFILE_MULTI_EDITOR_GUIDE.md)** - Complete Makefile usage guide
+
+### Technical Documentation
+- **[docs/api.md](docs/api.md)** - Extension API reference
+- **[docs/data-models.md](docs/data-models.md)** - Data structure documentation
+- **[docs/p2p-synchronization.md](docs/p2p-synchronization.md)** - P2P collaboration details
+
+### Guidelines
+- **[AGENTS.md](AGENTS.md)** - AI coding agent guidelines for this project
+
+---
+
+## Current Status
+
+**Phase:** 1 - Collection Management  
+**Week:** 1 - Collection Tree View & Structure  
+**Day:** 2 - Collection Manager Enhancements  
+
+**Build Status:**
+- ✅ TypeScript: 0 errors
+- ✅ Extension bundle: 582.9 KB
+- ✅ Webview bundle: 1.58 MB
+- ✅ Installed in: VS Code, Cursor, Antigravity
+
+See [docs/TODO.md](docs/TODO.md) for detailed task breakdown.
+
+---
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests
-5. Submit a pull request
+4. Run `npm run compile` and `make lint`
+5. Test with `make reinstall-all`
+6. Submit a pull request
 
-## Documentation
-
-- [Development Guide](docs/development.md) - Setup and development instructions
-- [Architecture](docs/architecture.md) - System design and architecture
-- [API Reference](docs/api.md) - Extension API documentation
-- [Implementation Todos](docs/implementation-todos.md) - Detailed task list
-- [Data Models](docs/data-models.md) - Data structure documentation
-- [P2P Synchronization](docs/p2p-synchronization.md) - P2P collaboration details
-- [OpenCall Implementation Plan](docs/opencall-implementation-plan.md) - Overall implementation strategy
+---
 
 ## Connect with OpenCall
 
 - **GitHub**: [https://github.com/opencall/opencall](https://github.com/opencall/opencall)
 - **Issues**: [https://github.com/opencall/opencall/issues](https://github.com/opencall/opencall/issues)
 - **Discussions**: [https://github.com/opencall/opencall/discussions](https://github.com/opencall/opencall/discussions)
+
+---
 
 ## License
 

@@ -18,6 +18,8 @@ import ServiceRegistry from "./ServiceRegistry";
 import RequestHandler from "./handlers/request-handler";
 import CollectionHandler from "./handlers/collection-handler";
 import EnvironmentHandler from "./handlers/environment-handler";
+import { CollectionTreeProvider } from "./CollectionTreeProvider";
+
 
 export async function activate(context: vscode.ExtensionContext) {
   logger.info("[Extension] Activating OpenCall extension...");
@@ -118,6 +120,16 @@ export async function activate(context: vscode.ExtensionContext) {
   }
 
   vscode.window.showInformationMessage(MESSAGE.WELCOME_MESSAGE);
+
+  // Initialize collection tree view
+  const collectionTreeProvider = new CollectionTreeProvider(collectionManager);
+  const collectionTreeView = vscode.window.createTreeView('opencall.collections', {
+    treeDataProvider: collectionTreeProvider,
+    showCollapseAll: true,
+    canSelectMany: false
+  });
+  context.subscriptions.push(collectionTreeView);
+  logger.info('[Extension] Collection tree view registered');
 
   // Register webview view provider for sidebar
   context.subscriptions.push(
@@ -272,6 +284,66 @@ export async function activate(context: vscode.ExtensionContext) {
     }),
   );
   logger.info("[Extension] Registered command: opencall.deleteEnvironment");
+
+  // Register opencall.addFolder command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("opencall.addFolder", async (item?: any) => {
+      logger.info("[Extension] opencall.addFolder command triggered", item);
+      const parentId = item?.item?.id;
+      const folderName = await vscode.window.showInputBox({
+        prompt: "Enter folder name",
+        placeHolder: "My Folder"
+      });
+      if (folderName) {
+        await collectionHandler.handleCreateFolder(folderName, parentId);
+        collectionTreeProvider.refresh();
+      }
+    }),
+  );
+  logger.info("[Extension] Registered command: opencall.addFolder");
+
+  // Register opencall.addRequestToCollection command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("opencall.addRequestToCollection", async (item?: any) => {
+      logger.info("[Extension] opencall.addRequestToCollection command triggered", item);
+      const parentId = item?.item?.id;
+      await requestHandler.handleCreateRequest(parentId);
+      collectionTreeProvider.refresh();
+    }),
+  );
+  logger.info("[Extension] Registered command: opencall.addRequestToCollection");
+
+  // Register opencall.renameCollection command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("opencall.renameCollection", async (item?: any) => {
+      logger.info("[Extension] opencall.renameCollection command triggered", item);
+      const itemId = item?.item?.id;
+      if (itemId) {
+        const newName = await vscode.window.showInputBox({
+          prompt: "Enter new name",
+          value: item?.item?.name
+        });
+        if (newName) {
+          await collectionHandler.handleRenameCollection(itemId, newName);
+          collectionTreeProvider.refresh();
+        }
+      }
+    }),
+  );
+  logger.info("[Extension] Registered command: opencall.renameCollection");
+
+  // Register opencall.duplicateRequest command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("opencall.duplicateRequest", async (item?: any) => {
+      logger.info("[Extension] opencall.duplicateRequest command triggered", item);
+      const requestId = item?.item?.id;
+      if (requestId) {
+        await requestHandler.handleDuplicateRequest(requestId);
+        collectionTreeProvider.refresh();
+      }
+    }),
+  );
+  logger.info("[Extension] Registered command: opencall.duplicateRequest");
 
   logger.info("[Extension] OpenCall extension activated successfully!");
 }

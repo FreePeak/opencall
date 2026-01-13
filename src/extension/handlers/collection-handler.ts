@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import { Collection } from '../../types';
 import ServiceRegistry from '../ServiceRegistry';
 import { ExportImportService } from '../export-import-service';
 import { logger } from '../../utils/logger';
@@ -150,14 +149,38 @@ export class CollectionHandler {
         return;
       }
 
-      // CollectionManager.updateCollection doesn't exist, need to use different approach
-      // For now, just show a message
-      vscode.window.showInformationMessage('Collection renaming not yet implemented in CollectionManager');
-      logger.info(`[CollectionHandler] Rename requested: ${currentName} -> ${name}`);
+      await this.collectionManager.updateCollection(collectionId, { name });
+      vscode.window.showInformationMessage(`Collection renamed to "${name}"`);
+      logger.info(`[CollectionHandler] Renamed collection: ${currentName} -> ${name}`);
 
     } catch (error) {
       logger.error('[CollectionHandler] Failed to rename collection', error);
       vscode.window.showErrorMessage(`Failed to rename collection: ${error}`);
+    }
+  }
+
+  /**
+   * Create a new folder in a collection
+   */
+  async handleCreateFolder(name: string, parentId?: string): Promise<void> {
+    try {
+      if (!parentId) {
+        vscode.window.showErrorMessage('Please select a collection or folder to add the folder to');
+        return;
+      }
+
+      const description = await vscode.window.showInputBox({
+        prompt: 'Enter folder description (optional)',
+        placeHolder: 'Description...',
+      });
+
+      await this.collectionManager.createFolder(name, parentId, description || '');
+      vscode.window.showInformationMessage(`Folder "${name}" created successfully!`);
+      logger.info(`[CollectionHandler] Created folder: ${name} in ${parentId}`);
+
+    } catch (error) {
+      logger.error('[CollectionHandler] Failed to create folder', error);
+      vscode.window.showErrorMessage(`Failed to create folder: ${error}`);
     }
   }
 }

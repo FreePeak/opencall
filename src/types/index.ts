@@ -166,6 +166,7 @@ export interface Collection {
   id: string;
   name: string;
   description?: string;
+  type?: 'collection' | 'folder';
   parentId?: string;
   items: (Collection | Request)[];
   auth?: Authentication;
