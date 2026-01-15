@@ -155,8 +155,6 @@ class MainWebViewPanel {
         headers,
         responseType,
         requestedTime,
-        favoritedTime: null,
-        isUserFavorite: false,
         id: requestId,
         requestObject,
       };
@@ -177,7 +175,6 @@ class MainWebViewPanel {
       // Update sidebar
       this.sidebarWebViewPanel.postMainWebViewPanelMessage(
         this.stateManager.getExtensionContext(COLLECTION.HISTORY_COLLECTION),
-        this.stateManager.getExtensionContext(COLLECTION.FAVORITES_COLLECTION),
       );
 
     } catch (error) {
@@ -269,8 +266,6 @@ class MainWebViewPanel {
               {
                 ...axiosConfiguration,
                 requestedTime,
-                favoritedTime: null,
-                isUserFavorite: false,
                 id: uuidv4(),
                 requestObject,
               },
@@ -287,8 +282,6 @@ class MainWebViewPanel {
               {
                 ...axiosConfiguration,
                 requestedTime,
-                favoritedTime: null,
-                isUserFavorite: false,
                 id: uuidv4(),
                 requestObject,
               },
@@ -302,12 +295,10 @@ class MainWebViewPanel {
     if (this.mainPanel) {
       console.log(
         this.stateManager.getExtensionContext(COLLECTION.HISTORY_COLLECTION),
-        this.stateManager.getExtensionContext(COLLECTION.FAVORITES_COLLECTION),
       );
       this.mainPanel.webview.postMessage(responseObject);
       this.sidebarWebViewPanel.postMainWebViewPanelMessage(
         this.stateManager.getExtensionContext(COLLECTION.HISTORY_COLLECTION),
-        this.stateManager.getExtensionContext(COLLECTION.FAVORITES_COLLECTION),
       );
     }
   }

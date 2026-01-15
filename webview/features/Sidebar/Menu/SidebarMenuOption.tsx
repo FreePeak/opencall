@@ -9,106 +9,46 @@ import { ISidebarSliceList } from "../../../store/slices/type";
 
 const SidebarMenuOption = () => {
   const {
-    userFavorites,
     sidebarOption,
     userRequestHistory,
     userCollections,
     handleUserDeleteIcon,
-    handleUserFavoriteIcon,
-    addCollectionToFavorites,
-    removeFromFavoriteCollection,
   } = useStore(
     (state) => ({
       sidebarOption: state.sidebarOption,
-      userFavorites: state.userFavorites,
       userRequestHistory: state.userRequestHistory,
       userCollections: state.userCollections,
       handleUserDeleteIcon: state.handleUserDeleteIcon,
-      handleUserFavoriteIcon: state.handleUserFavoriteIcon,
-      addCollectionToFavorites: state.addCollectionToFavorites,
-      removeFromFavoriteCollection: state.removeFromFavoriteCollection,
     }),
     shallow,
   );
 
   const sidebarCollectionProps = {
     sidebarOption,
-    handleSidebarFavoriteIcon(command: string, id: string) {
-      const currentTime = new Date().getTime();
-
-      if (command === SIDEBAR.ADD_TO_FAVORITES) {
-        vscode.postMessage({ command, id });
-
-        const selectedCollection = userRequestHistory.filter(
-          (collection) => collection.id === id,
-        );
-        selectedCollection[0].favoritedTime = currentTime;
-
-        handleUserFavoriteIcon(id, currentTime);
-        addCollectionToFavorites(selectedCollection);
-      } else if (command === SIDEBAR.REMOVE_FROM_FAVORITES) {
-        vscode.postMessage({ command, id });
-
-        handleUserFavoriteIcon(id, null);
-        removeFromFavoriteCollection(id);
-      }
-    },
     handleDeleteButton(id: string) {
-      switch (sidebarOption) {
-        case SIDEBAR.FAVORITES:
-          handleUserDeleteIcon(
-            SIDEBAR.USER_FAVORITES_COLLECTION as keyof ISidebarSliceList,
-            id,
-          );
-          handleUserFavoriteIcon(id, null);
+      handleUserDeleteIcon(
+        SIDEBAR.USER_REQUEST_HISTORY_COLLECTION as keyof ISidebarSliceList,
+        id,
+      );
 
-          return vscode.postMessage({
-            command: SIDEBAR.DELETE,
-            id,
-            target: SIDEBAR.USER_FAVORITES_COLLECTION,
-          });
-        default:
-          handleUserDeleteIcon(
-            SIDEBAR.USER_REQUEST_HISTORY_COLLECTION as keyof ISidebarSliceList,
-            id,
-          );
-
-          return vscode.postMessage({
-            command: SIDEBAR.DELETE,
-            id,
-            target: SIDEBAR.USER_REQUEST_HISTORY_COLLECTION,
-          });
-      }
+      return vscode.postMessage({
+        command: SIDEBAR.DELETE,
+        id,
+        target: SIDEBAR.USER_REQUEST_HISTORY_COLLECTION,
+      });
     },
     handleDeleteAllButton() {
-      switch (sidebarOption) {
-        case SIDEBAR.FAVORITES:
-          return vscode.postMessage({
-            command: SIDEBAR.DELETE_ALL_COLLECTION,
-            target: SIDEBAR.USER_FAVORITES_COLLECTION,
-          });
-        default:
-          return vscode.postMessage({
-            command: SIDEBAR.DELETE_ALL_COLLECTION,
-            target: SIDEBAR.USER_REQUEST_HISTORY_COLLECTION,
-          });
-      }
+      return vscode.postMessage({
+        command: SIDEBAR.DELETE_ALL_COLLECTION,
+        target: SIDEBAR.USER_REQUEST_HISTORY_COLLECTION,
+      });
     },
     handleUrlClick(id: string) {
-      switch (sidebarOption) {
-        case SIDEBAR.FAVORITES:
-          return vscode.postMessage({
-            command: REQUEST.URL_REQUEST,
-            id,
-            target: SIDEBAR.USER_FAVORITES_COLLECTION,
-          });
-        default:
-          return vscode.postMessage({
-            command: REQUEST.URL_REQUEST,
-            id,
-            target: SIDEBAR.USER_REQUEST_HISTORY_COLLECTION,
-          });
-      }
+      return vscode.postMessage({
+        command: REQUEST.URL_REQUEST,
+        id,
+        target: SIDEBAR.USER_REQUEST_HISTORY_COLLECTION,
+      });
     },
   };
 
@@ -117,13 +57,6 @@ const SidebarMenuOption = () => {
       return (
         <SidebarCollection
           userCollection={userCollections}
-          {...sidebarCollectionProps}
-        />
-      );
-    case SIDEBAR.FAVORITES:
-      return (
-        <SidebarCollection
-          userCollection={userFavorites}
           {...sidebarCollectionProps}
         />
       );

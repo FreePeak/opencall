@@ -4,23 +4,15 @@ export interface ISidebarSlice extends ISidebarSliceList {
   handleUserHistoryCollection: (
     historyData: IUserRequestSidebarState[],
   ) => void;
-  handleUserFavoritesCollection: (
-    favoritesData: IUserRequestSidebarState[],
-  ) => void;
   handleUserCollections: (collectionsData: any[]) => void;
-  handleUserFavoriteIcon: (id: string, time: number | null) => void;
   handleUserDeleteIcon: (
     targetState: keyof ISidebarSliceList,
     id: string,
   ) => void;
-  addCollectionToFavorites: (collection: IUserRequestSidebarState[]) => void;
-  removeFromFavoriteCollection: (id: string) => void;
-  resetFavoriteIconState: () => void;
   deleteCollection: (targetState: string) => void;
 }
 
 export interface ISidebarSliceList {
-  userFavorites: IUserRequestSidebarState[];
   userRequestHistory: IUserRequestSidebarState[];
   userCollections: any[];
 }
@@ -31,8 +23,6 @@ export interface IUserRequestSidebarState {
   headers: Headers;
   responseType: string;
   requestedTime: number;
-  favoritedTime: number | null;
-  isUserFavorite: boolean;
   id: string;
   requestObject: RequestObject;
 }

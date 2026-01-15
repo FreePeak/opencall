@@ -15,18 +15,14 @@ const SidebarMenu = () => {
     sidebarOption,
     deleteCollection,
     handleSidebarOption,
-    resetFavoriteIconState,
     handleUserHistoryCollection,
-    handleUserFavoritesCollection,
     handleUserCollections,
   } = useStore(
     (state) => ({
       sidebarOption: state.sidebarOption,
       deleteCollection: state.deleteCollection,
       handleSidebarOption: state.handleSidebarOption,
-      resetFavoriteIconState: state.resetFavoriteIconState,
       handleUserHistoryCollection: state.handleUserHistoryCollection,
-      handleUserFavoritesCollection: state.handleUserFavoritesCollection,
       handleUserCollections: state.handleUserCollections,
     }),
     shallow,
@@ -43,16 +39,14 @@ const SidebarMenu = () => {
   useLayoutEffect(() => {
     window.addEventListener("message", (message) => {
       console.log('Sidebar received message:', message.data);
-      const { messageCategory, history, favorites, collections, target } = message.data;
+      const { messageCategory, history, collections, target } = message.data;
 
       if (messageCategory === SIDEBAR.COLLECTION_DATA) {
-        console.log('Processing collection data:', { history, favorites, collections });
+        console.log('Processing collection data:', { history, collections });
         handleUserHistoryCollection(history?.userRequestHistory);
-        handleUserFavoritesCollection(favorites?.userRequestHistory);
         handleUserCollections(collections || []);
       } else if (messageCategory === SIDEBAR.DELETE_COMPLETE) {
         deleteCollection(target);
-        resetFavoriteIconState();
       }
     });
   }, []);
