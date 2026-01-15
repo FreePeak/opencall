@@ -54,6 +54,11 @@ export interface Request {
   createdAt: Date;
   updatedAt: Date;
   lastSentAt?: Date;
+  // Collection Manager enhancements
+  isFavorite?: boolean;
+  lastAccessedAt?: Date;
+  color?: string;
+  notes?: string;
 }
 
 export interface RequestHeader {
@@ -174,6 +179,11 @@ export interface Collection {
   scripts?: CollectionScripts;
   createdAt: Date;
   updatedAt: Date;
+  // Collection Manager enhancements
+  isPinned?: boolean;
+  color?: string;
+  lastAccessedAt?: Date;
+  order?: number;
 }
 
 export interface CollectionScripts {
@@ -230,4 +240,24 @@ export interface TestResult {
   passed: boolean;
   message?: string;
   executionTime: number;
+}
+
+// Collection Manager search and filter types
+export interface CollectionSearchFilters {
+  query?: string;
+  methods?: string[];
+  tags?: string[];
+  favoritesOnly?: boolean;
+  dateRange?: {
+    start?: Date;
+    end?: Date;
+  };
+  collectionIds?: string[];
+}
+
+export interface SearchResult {
+  type: 'request' | 'collection';
+  item: Request | Collection;
+  collection: Collection;
+  path: string[];
 }

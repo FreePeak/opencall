@@ -4,6 +4,7 @@ import { shallow } from "zustand/shallow";
 import { REQUEST, SIDEBAR } from "../../../constants";
 import useStore from "../../../store/useStore";
 import SidebarCollection from "../Collection/SidebarCollection";
+import SidebarCollectionTree from "../Collection/SidebarCollectionTree";
 
 import { ISidebarSliceList } from "../../../store/slices/type";
 
@@ -115,9 +116,24 @@ const SidebarMenuOption = () => {
   switch (sidebarOption) {
     case SIDEBAR.COLLECTIONS:
       return (
-        <SidebarCollection
-          userCollection={userCollections}
-          {...sidebarCollectionProps}
+        <SidebarCollectionTree
+          collections={userCollections}
+          onItemClick={(item) => {
+            if (item.method && item.url) {
+              vscode.postMessage({
+                command: REQUEST.URL_REQUEST,
+                id: item.id,
+                target: "collections",
+              });
+            }
+          }}
+          onDeleteItem={(item) => {
+            vscode.postMessage({
+              command: SIDEBAR.DELETE,
+              id: item.id,
+              target: "collections",
+            });
+          }}
         />
       );
     case SIDEBAR.FAVORITES:

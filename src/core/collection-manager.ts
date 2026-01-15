@@ -307,19 +307,102 @@ export class CollectionManager {
     return count;
   }
 
-  searchCollections(query: string): Collection[] {
-    const lowerQuery = query.toLowerCase();
-    const results: Collection[] = [];
+  searchCollections(query: string): Collection[];
+  searchCollections(filters: import('../types').CollectionSearchFilters): import('../types').SearchResult[];
+  searchCollections(queryOrFilters: string | import('../types').CollectionSearchFilters): Collection[] | import('../types').SearchResult[] {
+    // Legacy string-based search
+    if (typeof queryOrFilters === 'string') {
+      const lowerQuery = queryOrFilters.toLowerCase();
+      const results: Collection[] = [];
 
-    for (const collection of this.collections.values()) {
-      if (
-        collection.name.toLowerCase().includes(lowerQuery) ||
-        (collection.description?.toLowerCase().includes(lowerQuery))
-      ) {
-        results.push(collection);
+      for (const collection of this.collections.values()) {
+        if (
+          collection.name.toLowerCase().includes(lowerQuery) ||
+          (collection.description?.toLowerCase().includes(lowerQuery))
+        ) {
+          results.push(collection);
+        }
       }
-    }
 
+      return results;
+    }
+    
+    // New filter-based search
+    const filters = queryOrFilters;
+    logger.debug('[CollectionManager] Searching collections', filters);
+    
+    const results: import('../types').SearchResult[] = [];
+    const query = filters.query?.toLowerCase();
+    
+    const searchItems = (collection: Collection, path: string[] = []): void => {
+      const currentPath = [...path, collection.name];
+      
+      for (const item of collection.items) {
+        if (this.isCollection(item)) {
+          // Recurse into subcollection/folder
+          searchItems(item, currentPath);
+        } else {
+          // Check request against filters
+          const request = item as Request;
+          
+          // Text search
+          if (query && !request.name.toLowerCase().includes(query) &&
+              !request.url.toLowerCase().includes(query)) {
+            continue;
+          }
+          
+          // Method filter
+          if (filters.methods && filters.methods.length > 0 &&
+              !filters.methods.includes(request.method)) {
+            continue;
+          }
+          
+          // Tags filter
+          if (filters.tags && filters.tags.length > 0) {
+            const requestTags = request.tags || [];
+            if (!filters.tags.some(tag => requestTags.includes(tag))) {
+              continue;
+            }
+          }
+          
+          // Favorites filter
+          if (filters.favoritesOnly && !request.isFavorite) {
+            continue;
+          }
+          
+          // Date range filter
+          if (filters.dateRange) {
+            const accessTime = request.lastAccessedAt?.getTime();
+            const startTime = filters.dateRange.start?.getTime();
+            const endTime = filters.dateRange.end?.getTime();
+            
+            if (accessTime) {
+              if (startTime && accessTime < startTime) continue;
+              if (endTime && accessTime > endTime) continue;
+            }
+          }
+          
+          // Match found
+          results.push({
+            type: 'request',
+            item: request,
+            collection: collection,
+            path: currentPath,
+          });
+        }
+      }
+    };
+    
+    // Search all root collections or specified ones
+    const collectionsToSearch = filters.collectionIds
+      ? filters.collectionIds.map(id => this.collections.get(id)).filter(Boolean) as Collection[]
+      : this.getRootCollections();
+    
+    for (const collection of collectionsToSearch) {
+      searchItems(collection);
+    }
+    
+    logger.debug('[CollectionManager] Search completed', { resultCount: results.length });
     return results;
   }
 
@@ -613,6 +696,382 @@ export class CollectionManager {
       default:
         return undefined;
     }
+  }
+
+  // ============================================
+  // Collection Manager Enhancements - Phase 1
+  // ============================================
+
+  /**
+   * Toggle favorite status on a request
+   */
+  async toggleFavorite(requestId: string): Promise<Request | null> {
+    logger.info('[CollectionManager] Toggling favorite', { requestId });
+    
+    const result = this.findRequestById(requestId);
+    if (!result) {
+      logger.warn('[CollectionManager] Request not found for favorite toggle', { requestId });
+      return null;
+    }
+    
+    const { request, collection } = result;
+    request.isFavorite = !request.isFavorite;
+    request.updatedAt = new Date();
+    
+    await this.saveCollection(collection);
+    this._onCollectionUpdated.fire(collection);
+    
+    logger.info('[CollectionManager] Toggled favorite', { requestId, isFavorite: request.isFavorite });
+    return request;
+  }
+
+  /**
+   * Pin/unpin collection to top of sidebar
+   */
+  async pinCollection(collectionId: string): Promise<Collection | null> {
+    const collection = this.collections.get(collectionId);
+    if (!collection) {
+      logger.warn('[CollectionManager] Collection not found for pinning', { collectionId });
+      return null;
+    }
+    
+    collection.isPinned = !collection.isPinned;
+    collection.lastAccessedAt = new Date();
+    collection.updatedAt = new Date();
+    
+    await this.saveCollection(collection);
+    this._onCollectionUpdated.fire(collection);
+    
+    logger.info('[CollectionManager] Toggled pin', { collectionId, isPinned: collection.isPinned });
+    return collection;
+  }
+
+  /**
+   * Move request to different collection/folder with optional position
+   */
+  async moveRequest(
+    requestId: string,
+    targetCollectionId: string,
+    position?: number
+  ): Promise<boolean> {
+    logger.info('[CollectionManager] Moving request', { requestId, targetCollectionId, position });
+    
+    const source = this.findRequestById(requestId);
+    if (!source) {
+      logger.warn('[CollectionManager] Source request not found', { requestId });
+      return false;
+    }
+    
+    const targetCollection = this.collections.get(targetCollectionId);
+    if (!targetCollection) {
+      logger.warn('[CollectionManager] Target collection not found', { targetCollectionId });
+      return false;
+    }
+    
+    const { collection: sourceCollection, request, index } = source;
+    
+    // Remove from source
+    sourceCollection.items.splice(index, 1);
+    sourceCollection.updatedAt = new Date();
+    
+    // Update request metadata
+    request.collectionId = targetCollectionId;
+    request.updatedAt = new Date();
+    
+    // Add to target at position
+    if (position !== undefined && position >= 0 && position <= targetCollection.items.length) {
+      targetCollection.items.splice(position, 0, request);
+    } else {
+      targetCollection.items.push(request);
+    }
+    
+    targetCollection.updatedAt = new Date();
+    
+    // Update order numbers
+    this.updateItemOrders(targetCollection);
+    
+    await this.saveCollection(sourceCollection);
+    await this.saveCollection(targetCollection);
+    
+    this._onCollectionUpdated.fire(sourceCollection);
+    this._onCollectionUpdated.fire(targetCollection);
+    
+    logger.info('[CollectionManager] Moved request successfully', { requestId, targetCollectionId });
+    return true;
+  }
+
+  /**
+   * Reorder items within same collection
+   */
+  async reorderItems(
+    collectionId: string,
+    sourceIndex: number,
+    destinationIndex: number
+  ): Promise<boolean> {
+    const collection = this.collections.get(collectionId);
+    if (!collection) {
+      logger.warn('[CollectionManager] Collection not found for reorder', { collectionId });
+      return false;
+    }
+    
+    if (sourceIndex < 0 || sourceIndex >= collection.items.length ||
+        destinationIndex < 0 || destinationIndex >= collection.items.length) {
+      logger.warn('[CollectionManager] Invalid reorder indices', { sourceIndex, destinationIndex });
+      return false;
+    }
+    
+    // Reorder
+    const [removed] = collection.items.splice(sourceIndex, 1);
+    collection.items.splice(destinationIndex, 0, removed);
+    collection.updatedAt = new Date();
+    
+    this.updateItemOrders(collection);
+    await this.saveCollection(collection);
+    this._onCollectionUpdated.fire(collection);
+    
+    logger.info('[CollectionManager] Reordered items successfully', { collectionId, sourceIndex, destinationIndex });
+    return true;
+  }
+
+  /**
+   * Bulk delete requests or collections
+   */
+  async bulkDelete(ids: string[]): Promise<number> {
+    logger.info('[CollectionManager] Bulk delete', { count: ids.length });
+    
+    let deletedCount = 0;
+    const affectedCollections = new Set<Collection>();
+    
+    for (const id of ids) {
+      // Try as collection first
+      const collection = this.collections.get(id);
+      if (collection) {
+        if (await this.deleteCollection(id)) {
+          deletedCount++;
+        }
+        continue;
+      }
+      
+      // Try as request
+      const result = this.findRequestById(id);
+      if (result) {
+        result.collection.items.splice(result.index, 1);
+        result.collection.updatedAt = new Date();
+        affectedCollections.add(result.collection);
+        deletedCount++;
+      }
+    }
+    
+    // Save all affected collections
+    for (const collection of affectedCollections) {
+      await this.saveCollection(collection);
+      this._onCollectionUpdated.fire(collection);
+    }
+    
+    logger.info('[CollectionManager] Bulk delete completed', { deletedCount, total: ids.length });
+    return deletedCount;
+  }
+
+  /**
+   * Bulk move requests to target collection
+   */
+  async bulkMove(requestIds: string[], targetCollectionId: string): Promise<number> {
+    logger.info('[CollectionManager] Bulk move', { count: requestIds.length, targetCollectionId });
+    
+    let movedCount = 0;
+    
+    for (const requestId of requestIds) {
+      if (await this.moveRequest(requestId, targetCollectionId)) {
+        movedCount++;
+      }
+    }
+    
+    logger.info('[CollectionManager] Bulk move completed', { movedCount, total: requestIds.length });
+    return movedCount;
+  }
+
+  /**
+   * Bulk add tags to requests
+   */
+  async bulkAddTags(requestIds: string[], tags: string[]): Promise<number> {
+    logger.info('[CollectionManager] Bulk add tags', { count: requestIds.length, tags });
+    
+    let taggedCount = 0;
+    const affectedCollections = new Set<Collection>();
+    
+    for (const requestId of requestIds) {
+      const result = this.findRequestById(requestId);
+      if (result) {
+        const { request, collection } = result;
+        request.tags = request.tags || [];
+        
+        // Add unique tags
+        for (const tag of tags) {
+          if (!request.tags.includes(tag)) {
+            request.tags.push(tag);
+          }
+        }
+        
+        request.updatedAt = new Date();
+        collection.updatedAt = new Date();
+        affectedCollections.add(collection);
+        taggedCount++;
+      }
+    }
+    
+    // Save all affected collections
+    for (const collection of affectedCollections) {
+      await this.saveCollection(collection);
+      this._onCollectionUpdated.fire(collection);
+    }
+    
+    logger.info('[CollectionManager] Bulk add tags completed', { taggedCount, total: requestIds.length });
+    return taggedCount;
+  }
+
+  /**
+   * Get all favorited requests across collections
+   */
+  getFavoriteRequests(): import('../types').SearchResult[] {
+    return this.searchCollections({ favoritesOnly: true }) as import('../types').SearchResult[];
+  }
+
+  /**
+   * Get pinned collections
+   */
+  getPinnedCollections(): Collection[] {
+    return Array.from(this.collections.values())
+      .filter(c => c.isPinned && !c.parentId)
+      .sort((a, b) => {
+        const aTime = a.lastAccessedAt?.getTime() || 0;
+        const bTime = b.lastAccessedAt?.getTime() || 0;
+        return bTime - aTime;
+      });
+  }
+
+  /**
+   * Export collection to JSON string
+   */
+  exportCollectionAsJson(collectionId: string): string | null {
+    const collection = this.collections.get(collectionId);
+    if (!collection) {
+      logger.warn('[CollectionManager] Collection not found for export', { collectionId });
+      return null;
+    }
+    
+    const exportData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      collection: collection,
+    };
+    
+    logger.info('[CollectionManager] Exported collection', { collectionId });
+    return JSON.stringify(exportData, null, 2);
+  }
+
+  /**
+   * Import collection from JSON
+   */
+  async importCollection(jsonData: string, parentId?: string): Promise<Collection | null> {
+    try {
+      const data = JSON.parse(jsonData);
+      
+      if (!data.collection || !data.collection.name) {
+        throw new Error('Invalid collection format');
+      }
+      
+      // Generate new IDs to avoid conflicts
+      const collection = this.regenerateIds(data.collection);
+      collection.parentId = parentId;
+      
+      this.collections.set(collection.id, collection);
+      
+      if (parentId) {
+        const parent = this.collections.get(parentId);
+        if (parent) {
+          parent.items.push(collection);
+          parent.updatedAt = new Date();
+        }
+      } else {
+        this.rootCollections.push(collection.id);
+      }
+      
+      await this.saveCollection(collection);
+      this._onCollectionCreated.fire(collection);
+      
+      logger.info('[CollectionManager] Imported collection', { collectionId: collection.id });
+      return collection;
+    } catch (error) {
+      logger.error('[CollectionManager] Import failed', error);
+      return null;
+    }
+  }
+
+  // Helper methods
+
+  private isCollection(item: Collection | Request): item is Collection {
+    return 'items' in item;
+  }
+
+  private findRequestById(requestId: string): {
+    collection: Collection;
+    request: Request;
+    index: number;
+  } | null {
+    for (const collection of this.collections.values()) {
+      const result = this.findRequestInCollection(collection, requestId);
+      if (result) {
+        return { collection, ...result };
+      }
+    }
+    return null;
+  }
+
+  private findRequestInCollection(collection: Collection, requestId: string): {
+    request: Request;
+    index: number;
+  } | null {
+    for (let i = 0; i < collection.items.length; i++) {
+      const item = collection.items[i];
+      
+      if (this.isCollection(item)) {
+        const result = this.findRequestInCollection(item, requestId);
+        if (result) return result;
+      } else if ((item as Request).id === requestId) {
+        return { request: item as Request, index: i };
+      }
+    }
+    return null;
+  }
+
+  private updateItemOrders(collection: Collection): void {
+    collection.items.forEach((item, index) => {
+      if ('order' in item) {
+        (item as any).order = index;
+      }
+    });
+  }
+
+  private regenerateIds(collection: Collection): Collection {
+    collection.id = generateId();
+    collection.createdAt = new Date();
+    collection.updatedAt = new Date();
+    
+    collection.items = collection.items.map(item => {
+      if (this.isCollection(item)) {
+        return this.regenerateIds(item);
+      } else {
+        const request = item as Request;
+        return {
+          ...request,
+          id: generateId(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      }
+    });
+    
+    return collection;
   }
 }
 
