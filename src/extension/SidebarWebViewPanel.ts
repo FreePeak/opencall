@@ -8,6 +8,8 @@ import { IUserRequestSidebarState } from "./utils/type";
 import { StorageManager } from "../storage/storage-manager";
 import { CollectionManager } from "../core/collection-manager";
 import { EnvironmentManager } from "../core/environment-manager";
+import { logger } from "../utils/logger";
+import { CollectionSearchFilters } from "../types";
 
 class SidebarWebViewPanel {
   public sidebarWebview: vscode.WebviewView | null = null;
@@ -103,15 +105,9 @@ class SidebarWebViewPanel {
     if (!this.sidebarWebview) return;
 
     this.sidebarWebview.webview.onDidReceiveMessage(
-      async ({
-        command,
-        id,
-        target,
-      }: {
-        command: string;
-        id: string;
-        target: string;
-      }) => {
+      async (message: any) => {
+        const { command, id, target } = message;
+        
         if (command === COMMAND.START_APP) {
           vscode.commands.executeCommand(COMMAND.MAIN_WEB_VIEW_PANEL);
         } else if (command === COMMAND.ADD_TO_FAVORITES) {
@@ -199,6 +195,225 @@ class SidebarWebViewPanel {
               messageCategory: CATEGORY.DELETION_COMPLETE,
               target,
             });
+          }
+        } else if (command === COMMAND.TOGGLE_FAVORITE) {
+          // Toggle favorite status on a request
+          try {
+            logger.info('[SidebarWebViewPanel] Toggling favorite', { requestId: id });
+            await this.collectionManager.toggleFavorite(id);
+            
+            // Send updated collections back to webview
+            const collections = this.collectionManager.getAllCollections();
+            if (this.sidebarWebview) {
+              this.sidebarWebview.webview.postMessage({
+                messageCategory: CATEGORY.COLLECTION_DATA,
+                collections: collections,
+              });
+            }
+          } catch (error) {
+            logger.error('[SidebarWebViewPanel] Failed to toggle favorite', error);
+            vscode.window.showErrorMessage(`Failed to toggle favorite: ${error}`);
+          }
+        } else if (command === COMMAND.PIN_COLLECTION) {
+          // Pin/unpin a collection
+          try {
+            logger.info('[SidebarWebViewPanel] Toggling pin on collection', { collectionId: id });
+            await this.collectionManager.pinCollection(id);
+            
+            // Send updated collections back to webview
+            const collections = this.collectionManager.getAllCollections();
+            if (this.sidebarWebview) {
+              this.sidebarWebview.webview.postMessage({
+                messageCategory: CATEGORY.COLLECTION_DATA,
+                collections: collections,
+              });
+            }
+          } catch (error) {
+            logger.error('[SidebarWebViewPanel] Failed to pin collection', error);
+            vscode.window.showErrorMessage(`Failed to pin collection: ${error}`);
+          }
+        } else if (command === COMMAND.MOVE_REQUEST) {
+          // Move a request to a different collection
+          try {
+            const { requestId, targetCollectionId, position } = message;
+            logger.info('[SidebarWebViewPanel] Moving request', { requestId, targetCollectionId, position });
+            
+            await this.collectionManager.moveRequest(requestId, targetCollectionId, position);
+            
+            // Send updated collections back to webview
+            const collections = this.collectionManager.getAllCollections();
+            if (this.sidebarWebview) {
+              this.sidebarWebview.webview.postMessage({
+                messageCategory: CATEGORY.COLLECTION_DATA,
+                collections: collections,
+              });
+            }
+          } catch (error) {
+            logger.error('[SidebarWebViewPanel] Failed to move request', error);
+            vscode.window.showErrorMessage(`Failed to move request: ${error}`);
+          }
+        } else if (command === COMMAND.REORDER_ITEMS) {
+          // Reorder items within a collection
+          try {
+            const { collectionId, sourceIndex, destinationIndex } = message;
+            logger.info('[SidebarWebViewPanel] Reordering items', { collectionId, sourceIndex, destinationIndex });
+            
+            await this.collectionManager.reorderItems(collectionId, sourceIndex, destinationIndex);
+            
+            // Send updated collections back to webview
+            const collections = this.collectionManager.getAllCollections();
+            if (this.sidebarWebview) {
+              this.sidebarWebview.webview.postMessage({
+                messageCategory: CATEGORY.COLLECTION_DATA,
+                collections: collections,
+              });
+            }
+          } catch (error) {
+            logger.error('[SidebarWebViewPanel] Failed to reorder items', error);
+            vscode.window.showErrorMessage(`Failed to reorder items: ${error}`);
+          }
+        } else if (command === COMMAND.BULK_DELETE) {
+          // Delete multiple items
+          try {
+            const { ids } = message;
+            logger.info('[SidebarWebViewPanel] Bulk deleting items', { count: ids?.length });
+            
+            const answer = await vscode.window.showWarningMessage(
+              `Delete ${ids?.length || 0} items?`,
+              MESSAGE.YES,
+              MESSAGE.NO,
+            );
+
+            if (answer === MESSAGE.YES) {
+              await this.collectionManager.bulkDelete(ids);
+              
+              // Send updated collections back to webview
+              const collections = this.collectionManager.getAllCollections();
+              if (this.sidebarWebview) {
+                this.sidebarWebview.webview.postMessage({
+                  messageCategory: CATEGORY.COLLECTION_DATA,
+                  collections: collections,
+                });
+              }
+            }
+          } catch (error) {
+            logger.error('[SidebarWebViewPanel] Failed to bulk delete', error);
+            vscode.window.showErrorMessage(`Failed to delete items: ${error}`);
+          }
+        } else if (command === COMMAND.BULK_MOVE) {
+          // Move multiple requests to a collection
+          try {
+            const { requestIds, targetCollectionId } = message;
+            logger.info('[SidebarWebViewPanel] Bulk moving requests', { count: requestIds?.length, targetCollectionId });
+            
+            await this.collectionManager.bulkMove(requestIds, targetCollectionId);
+            
+            // Send updated collections back to webview
+            const collections = this.collectionManager.getAllCollections();
+            if (this.sidebarWebview) {
+              this.sidebarWebview.webview.postMessage({
+                messageCategory: CATEGORY.COLLECTION_DATA,
+                collections: collections,
+              });
+            }
+          } catch (error) {
+            logger.error('[SidebarWebViewPanel] Failed to bulk move', error);
+            vscode.window.showErrorMessage(`Failed to move requests: ${error}`);
+          }
+        } else if (command === COMMAND.BULK_ADD_TAGS) {
+          // Add tags to multiple requests
+          try {
+            const { requestIds, tags } = message;
+            logger.info('[SidebarWebViewPanel] Bulk adding tags', { count: requestIds?.length, tags });
+            
+            await this.collectionManager.bulkAddTags(requestIds, tags);
+            
+            // Send updated collections back to webview
+            const collections = this.collectionManager.getAllCollections();
+            if (this.sidebarWebview) {
+              this.sidebarWebview.webview.postMessage({
+                messageCategory: CATEGORY.COLLECTION_DATA,
+                collections: collections,
+              });
+            }
+          } catch (error) {
+            logger.error('[SidebarWebViewPanel] Failed to bulk add tags', error);
+            vscode.window.showErrorMessage(`Failed to add tags: ${error}`);
+          }
+        } else if (command === COMMAND.SEARCH_COLLECTIONS) {
+          // Search collections with filters
+          try {
+            const { filters } = message as { filters: CollectionSearchFilters };
+            logger.info('[SidebarWebViewPanel] Searching collections', { filters });
+            
+            const searchResults = this.collectionManager.searchCollections(filters);
+            
+            // Send search results back to webview
+            if (this.sidebarWebview) {
+              this.sidebarWebview.webview.postMessage({
+                messageCategory: 'Search Results',
+                results: searchResults,
+              });
+            }
+          } catch (error) {
+            logger.error('[SidebarWebViewPanel] Failed to search collections', error);
+            vscode.window.showErrorMessage(`Search failed: ${error}`);
+          }
+        } else if (command === COMMAND.EXPORT_COLLECTION) {
+          // Export collection to JSON
+          try {
+            const { collectionId } = message;
+            logger.info('[SidebarWebViewPanel] Exporting collection', { collectionId });
+            
+            const jsonData = this.collectionManager.exportCollectionAsJson(collectionId);
+            
+            if (!jsonData) {
+              vscode.window.showErrorMessage('Collection not found');
+              return;
+            }
+            
+            // Prompt user for save location
+            const uri = await vscode.window.showSaveDialog({
+              defaultUri: vscode.Uri.file(`collection-${collectionId}.json`),
+              filters: {
+                'JSON': ['json']
+              }
+            });
+
+            if (uri) {
+              await vscode.workspace.fs.writeFile(uri, Buffer.from(jsonData, 'utf-8'));
+              vscode.window.showInformationMessage('Collection exported successfully');
+            }
+          } catch (error) {
+            logger.error('[SidebarWebViewPanel] Failed to export collection', error);
+            vscode.window.showErrorMessage(`Failed to export collection: ${error}`);
+          }
+        } else if (command === COMMAND.IMPORT_COLLECTION) {
+          // Import collection from JSON
+          try {
+            const { jsonData, parentId } = message;
+            logger.info('[SidebarWebViewPanel] Importing collection', { parentId });
+            
+            const collection = await this.collectionManager.importCollection(jsonData, parentId);
+            
+            if (!collection) {
+              vscode.window.showErrorMessage('Failed to import collection');
+              return;
+            }
+            
+            // Send updated collections back to webview
+            const collections = this.collectionManager.getAllCollections();
+            if (this.sidebarWebview) {
+              this.sidebarWebview.webview.postMessage({
+                messageCategory: CATEGORY.COLLECTION_DATA,
+                collections: collections,
+              });
+            }
+            
+            vscode.window.showInformationMessage(`Collection "${collection.name}" imported successfully`);
+          } catch (error) {
+            logger.error('[SidebarWebViewPanel] Failed to import collection', error);
+            vscode.window.showErrorMessage(`Failed to import collection: ${error}`);
           }
         } else {
           if (!this.mainWebViewPanel) {

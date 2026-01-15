@@ -19,6 +19,7 @@ import RequestHandler from "./handlers/request-handler";
 import CollectionHandler from "./handlers/collection-handler";
 import EnvironmentHandler from "./handlers/environment-handler";
 import { CollectionTreeProvider } from "./CollectionTreeProvider";
+import { migrateFavoritesToCollections } from "./migrations/migrate-favorites";
 
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -79,6 +80,15 @@ export async function activate(context: vscode.ExtensionContext) {
   } catch (error) {
     logger.error("[Extension] Failed to load data from storage", error);
     vscode.window.showWarningMessage("Failed to load saved data. Starting with empty state.");
+  }
+
+  // Run favorites migration (only runs once)
+  try {
+    await migrateFavoritesToCollections(context, collectionManager);
+    logger.info("[Extension] Favorites migration check completed");
+  } catch (error) {
+    logger.error("[Extension] Failed to run favorites migration", error);
+    vscode.window.showWarningMessage("Failed to migrate favorites. Old favorites may not be available.");
   }
 
   // Register all services in ServiceRegistry

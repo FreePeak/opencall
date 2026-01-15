@@ -1,26 +1,39 @@
+// Collection Manager types
+export interface CollectionSearchFilters {
+  query?: string;
+  methods?: string[];
+  tags?: string[];
+  favoritesOnly?: boolean;
+  dateRange?: {
+    start: Date;
+    end: Date;
+  };
+  collectionIds?: string[];
+}
+
 export interface ISidebarSlice extends ISidebarSliceList {
   sidebarOption: string | null;
+  collectionFilters: CollectionSearchFilters;
+  selectedItems: string[];
   handleSidebarOption: (option: string) => void;
   handleUserHistoryCollection: (
     historyData: IUserRequestSidebarState[],
   ) => void;
-  handleUserFavoritesCollection: (
-    favoritesData: IUserRequestSidebarState[],
-  ) => void;
   handleUserCollections: (collectionsData: any[]) => void;
+  setCollectionFilters: (filters: CollectionSearchFilters) => void;
+  setSelectedItems: (items: string[]) => void;
+  toggleItemSelection: (id: string) => void;
+  clearSelection: () => void;
   handleUserFavoriteIcon: (id: string, time: number | null) => void;
   handleUserDeleteIcon: (
     targetState: keyof ISidebarSliceList,
     id: string,
   ) => void;
-  addCollectionToFavorites: (collection: IUserRequestSidebarState[]) => void;
-  removeFromFavoriteCollection: (id: string) => void;
   resetFavoriteIconState: () => void;
   deleteCollection: (targetState: string) => void;
 }
 
 export interface ISidebarSliceList {
-  userFavorites: IUserRequestSidebarState[];
   userRequestHistory: IUserRequestSidebarState[];
   userCollections: any[];
 }
