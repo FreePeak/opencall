@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { AiFillHeart, AiOutlineHeart } from "react-icons/ai";
 import { FaTrashAlt } from "react-icons/fa";
 import styled from "styled-components";
 
@@ -20,15 +19,12 @@ interface ISidebarCollectionProps {
     headers: Headers;
     responseType: string;
     requestedTime: number;
-    favoritedTime: number | null;
-    isUserFavorite: boolean;
     id: string;
     requestObject: RequestObject;
   }[];
   handleUrlClick: (id: string) => void;
   handleDeleteButton: (id: string) => void;
   handleDeleteAllButton: () => void;
-  handleSidebarFavoriteIcon: (stringValue: string, id: string) => void;
 }
 const SidebarCollection = ({
   sidebarOption,
@@ -36,7 +32,6 @@ const SidebarCollection = ({
   handleUrlClick,
   handleDeleteButton,
   handleDeleteAllButton,
-  handleSidebarFavoriteIcon,
 }: ISidebarCollectionProps) => {
   const [searchInputValue, setSearchInputValue] = useState("");
 
@@ -68,19 +63,14 @@ const SidebarCollection = ({
                     ({
                       url,
                       method,
-                      isUserFavorite,
                       id,
                       requestedTime,
-                      favoritedTime,
                     }) => {
                       const methodColor = generateMethodColor(
                         method.toLowerCase(),
                       );
                       const collectionCreatedTime =
                         calculateCollectionTime(requestedTime);
-                      const favoriteListedTime = calculateCollectionTime(
-                        favoritedTime || 0,
-                      );
 
                       return (
                         <HistoryListWrapper key={sidebarOption + id}>
@@ -94,36 +84,9 @@ const SidebarCollection = ({
                           </Information>
                           <MoreInformation>
                             <div>
-                              {sidebarOption === SIDEBAR.HISTORY ? (
-                                <p>{collectionCreatedTime}</p>
-                              ) : (
-                                <p>Added {favoriteListedTime}</p>
-                              )}
+                              <p>{collectionCreatedTime}</p>
                             </div>
                             <div role="iconWrapper">
-                              {sidebarOption === SIDEBAR.HISTORY ? (
-                                isUserFavorite ? (
-                                  <AiFillHeart
-                                    className="sidebarIcon favorite"
-                                    onClick={() =>
-                                      handleSidebarFavoriteIcon(
-                                        SIDEBAR.REMOVE_FROM_FAVORITES,
-                                        id,
-                                      )
-                                    }
-                                  />
-                                ) : (
-                                  <AiOutlineHeart
-                                    className="sidebarIcon"
-                                    onClick={() =>
-                                      handleSidebarFavoriteIcon(
-                                        SIDEBAR.ADD_TO_FAVORITES,
-                                        id,
-                                      )
-                                    }
-                                  />
-                                )
-                              ) : null}
                               <FaTrashAlt
                                 className="sidebarIcon"
                                 onClick={() => handleDeleteButton(id)}

@@ -30,10 +30,6 @@ const MoreInformationWrapper = styled.div`
       opacity: 0.45;
     }
   }
-
-  .favorite {
-    fill: var(--vscode-errorForeground, #f48771);
-  }
 `;
 
 export default MoreInformation;
