@@ -4,8 +4,6 @@ export interface IUserRequestSidebarState {
   headers: Headers;
   responseType: string;
   requestedTime: number;
-  favoritedTime: number | null;
-  isUserFavorite: boolean;
   id: string;
   requestObject: RequestObject;
 }

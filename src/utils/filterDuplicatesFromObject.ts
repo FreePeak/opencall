@@ -1,20 +1,19 @@
 import { IUserRequestSidebarState } from "./type";
 
+// This function was used for favorites functionality which has been removed.
+// Keeping as placeholder for potential future use.
 const filterDuplicatesFromObject = (
   currentCollection: IUserRequestSidebarState[],
   previousCollection: IUserRequestSidebarState[],
   id: string,
 ) => {
   const arr: string[] = [];
-  const filteredCurrentCollection = currentCollection.filter(
-    (history) => history.isUserFavorite,
-  );
 
   const filteredPreviousCollection =
     previousCollection?.filter((history) => history.id !== id) || [];
 
   const combinedCollection = [
-    ...filteredCurrentCollection,
+    ...currentCollection,
     ...filteredPreviousCollection,
   ];
 

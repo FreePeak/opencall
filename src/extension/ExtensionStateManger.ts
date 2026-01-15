@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 
 import { COLLECTION } from "./constants";
-import { filterDuplicatesFromObject } from "./utils";
 import { IUserRequestSidebarState } from "./utils/type";
 
 class ExtentionStateManager {
