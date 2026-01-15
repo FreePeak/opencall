@@ -16,7 +16,7 @@ const DetailOptionWrapper = styled.div<{ purpose?: boolean }>`
 
   p {
     padding-bottom: 0.35rem;
-    color: rgb(66 245 66);
+    color: var(--vscode-terminal-ansiGreen, #73c991);
     transform: translateX(-0.7rem);
     user-select: none;
   }

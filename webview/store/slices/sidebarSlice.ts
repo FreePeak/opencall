@@ -11,7 +11,8 @@ const sidebarSlice: StateCreator<ISidebarSlice, [], [], ISidebarSlice> = (
 ) => ({
   userFavorites: [],
   userRequestHistory: [],
-  sidebarOption: SIDEBAR.HISTORY,
+  userCollections: [],
+  sidebarOption: SIDEBAR.COLLECTIONS,
 
   handleSidebarOption: (option: string) =>
     set(() => ({ sidebarOption: option })),
@@ -21,6 +22,9 @@ const sidebarSlice: StateCreator<ISidebarSlice, [], [], ISidebarSlice> = (
 
   handleUserFavoritesCollection: (favoritesData: IUserRequestSidebarState[]) =>
     set(() => ({ userFavorites: favoritesData })),
+
+  handleUserCollections: (collectionsData: any[]) =>
+    set(() => ({ userCollections: collectionsData })),
 
   handleUserFavoriteIcon: (id: string, time: number | null) =>
     set((state) => ({

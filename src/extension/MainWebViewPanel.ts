@@ -73,9 +73,9 @@ class MainWebViewPanel {
 
   private async handleSaveRequest(requestData: any) {
     try {
-      const { requestUrl, requestMethod, keyValueTableData, authOption, authData, bodyOption, bodyRawOption, bodyRawData } = requestData;
+      const { requestUrl, requestMethod, keyValueTableData, authOption, authData, bodyOption, bodyRawOption, bodyRawData, collectionId } = requestData;
       
-      // Create a request object
+      // Create a request object (for legacy history)
       const requestObject = {
         requestMethod,
         requestUrl,
@@ -91,16 +91,64 @@ class MainWebViewPanel {
       const requestId = uuidv4();
       const requestedTime = new Date().getTime();
 
-      // Get current history
-      const { userRequestHistory } = this.stateManager.getExtensionContext(COLLECTION.HISTORY_COLLECTION);
-
-      // Process the request data to match the interface
+      // Process the request data
       const url = getUrl(requestUrl);
       const method = requestMethod;
       const headers = getHeaders(keyValueTableData, authOption, authData);
       const responseType = 'text';
 
-      // Create new request entry matching IUserRequestSidebarState
+      // Build headers array for storage
+      const headersArray = keyValueTableData
+        ?.filter((item: any) => item.keyItem && item.isRowChecked)
+        ?.map((item: any) => ({
+          key: item.keyItem,
+          value: item.valueItem,
+          enabled: item.isRowChecked,
+          description: item.description || '',
+        })) || [];
+
+      // Build body for storage
+      let body: any = undefined;
+      if (bodyOption !== 'none') {
+        body = {
+          mode: bodyOption === 'raw' ? (bodyRawOption || 'text') : bodyOption,
+          raw: bodyRawData,
+        };
+      }
+
+      // Build auth for storage
+      let auth: any = { type: 'none' };
+      if (authOption === 'bearer' && authData?.token) {
+        auth = { type: 'bearer', bearer: { token: authData.token } };
+      } else if (authOption === 'basic' && authData?.username) {
+        auth = { type: 'basic', basic: { username: authData.username, password: authData.password } };
+      } else if (authOption === 'apikey' && authData?.key) {
+        auth = { type: 'apikey', apiKey: { key: authData.key, value: authData.value, addTo: authData.addTo || 'header' } };
+      }
+
+      // Create Request object for storage (proper type)
+      const storageRequest = {
+        id: requestId,
+        name: `${method} ${url}`,
+        description: '',
+        method: method as any,
+        url: url,
+        headers: headersArray,
+        body: body,
+        auth: auth,
+        tests: [],
+        collectionId: collectionId || 'default',
+        folderId: undefined,
+        tags: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      // Save to StorageManager (persistent storage)
+      await this.storageManager.saveRequest(storageRequest);
+
+      // Also save to history for legacy sidebar display
+      const { userRequestHistory } = this.stateManager.getExtensionContext(COLLECTION.HISTORY_COLLECTION);
       const newRequest: IUserRequestSidebarState = {
         url,
         method,
@@ -113,7 +161,6 @@ class MainWebViewPanel {
         requestObject,
       };
 
-      // Save to history
       if (!userRequestHistory) {
         await this.stateManager.addExtensionContext(COLLECTION.HISTORY_COLLECTION, {
           history: [newRequest],

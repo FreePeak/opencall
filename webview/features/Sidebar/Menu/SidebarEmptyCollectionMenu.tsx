@@ -16,6 +16,8 @@ const SibebarEmptyCollectionMenu = ({
     <Message>
       {currentSidebarOption === SIDEBAR.HISTORY ? (
         <EmptyHistoryCollectionMessage />
+      ) : currentSidebarOption === SIDEBAR.COLLECTIONS ? (
+        <p>No collections yet. Create a collection to organize your requests.</p>
       ) : (
         <EmptyFavoritesCollectionMessage />
       )}

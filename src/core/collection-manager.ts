@@ -15,6 +15,7 @@ export class CollectionManager {
   private rootCollections: string[] = [];
   private options: CollectionManagerOptions;
   private storageManager: StorageManager | null = null;
+  private requestManager: any = null; // Reference to RequestManager for hydrating requests
 
   // Events
   private _onCollectionCreated = new vscode.EventEmitter<Collection>();
@@ -52,6 +53,14 @@ export class CollectionManager {
   setStorageManager(storageManager: StorageManager): void {
     this.storageManager = storageManager;
     logger.info('[CollectionManager] Storage manager connected');
+  }
+
+  /**
+   * Set request manager for hydrating request references (dependency injection)
+   */
+  setRequestManager(requestManager: any): void {
+    this.requestManager = requestManager;
+    logger.info('[CollectionManager] Request manager connected');
   }
 
   async createCollection(
@@ -327,12 +336,56 @@ export class CollectionManager {
         logger.warn('[CollectionManager] Storage manager not set, skipping save');
         return;
       }
-      await this.storageManager.saveCollection(collection);
+      // Serialize collection to avoid circular references
+      const serialized = this.serializeCollection(collection);
+      await this.storageManager.saveCollection(serialized);
       logger.debug(`[CollectionManager] Saved collection: ${collection.id}`);
     } catch (error) {
       logger.error('Failed to save collection', error);
       throw error;
     }
+  }
+
+  /**
+   * Serialize collection for storage without circular references
+   * Converts nested Collection/Request objects to ID references
+   */
+  private serializeCollection(collection: Collection): Collection {
+    return {
+      ...collection,
+      items: collection.items.map(item => {
+        // Check if item has 'items' property (Collection) or 'method' property (Request)
+        const isCollection = 'items' in item;
+        const isRequest = 'method' in item;
+        
+        // Store only item metadata, not full nested objects
+        return {
+          id: item.id,
+          name: item.name,
+          type: isCollection ? 'collection' : isRequest ? 'request' : 'unknown',
+        } as any;
+      })
+    };
+  }
+
+  /**
+   * Hydrate collection by resolving item IDs to full objects
+   */
+  private hydrateCollection(collection: Collection): Collection {
+    const hydrated = { ...collection };
+    hydrated.items = collection.items.map(item => {
+      const itemData = item as any;
+      if (itemData.type === 'collection') {
+        // Resolve collection reference
+        const childCollection = this.collections.get(itemData.id);
+        return childCollection || item;
+      } else {
+        // For requests, we'll keep the minimal data or fetch from request manager
+        // For now, keep as-is since requests are managed separately
+        return item;
+      }
+    });
+    return hydrated;
   }
 
   private async deleteCollectionData(collectionId: string): Promise<void> {
@@ -363,7 +416,7 @@ export class CollectionManager {
       this.collections.clear();
       this.rootCollections = [];
 
-      // Build collections map and root list
+      // First pass: Load all collections into map
       for (const collection of collections) {
         this.collections.set(collection.id, collection);
         if (!collection.parentId) {
@@ -371,11 +424,42 @@ export class CollectionManager {
         }
       }
 
+      // Second pass: Hydrate items by resolving references
+      for (const [id, collection] of this.collections.entries()) {
+        const hydrated = this.hydrateCollectionItems(collection);
+        this.collections.set(id, hydrated);
+      }
+
       logger.info(`[CollectionManager] Loaded ${this.collections.size} collections`);
     } catch (error) {
       logger.error('Failed to load collections', error);
       throw error;
     }
+  }
+
+  /**
+   * Hydrate collection items by resolving ID references to full objects
+   */
+  private hydrateCollectionItems(collection: Collection): Collection {
+    const hydrated = { ...collection };
+    hydrated.items = collection.items.map(item => {
+      const itemData = item as any;
+      // Check if item is just an ID reference (from serialized data)
+      if (itemData.type === 'collection' && typeof itemData.id === 'string') {
+        const childCollection = this.collections.get(itemData.id);
+        return childCollection || item;
+      } else if (itemData.type === 'request' && typeof itemData.id === 'string') {
+        // Try to resolve request from RequestManager
+        if (this.requestManager) {
+          const fullRequest = this.requestManager.getRequest(itemData.id);
+          return fullRequest || item;
+        }
+        return item;
+      }
+      // Otherwise keep as-is (already full object)
+      return item;
+    });
+    return hydrated;
   }
 
   /**

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import * as vscode from "vscode";
 
-import { COLLECTION, COMMAND, MESSAGE } from "./constants";
+import { CATEGORY, COLLECTION, COMMAND, MESSAGE } from "./constants";
 import ExtentionStateManager from "./ExtensionStateManger";
 import MainWebViewPanel from "./MainWebViewPanel";
 import SidebarWebViewPanel from "./SidebarWebViewPanel";
@@ -66,6 +66,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Connect managers to storage layer
   collectionManager.setStorageManager(storageManager);
+  collectionManager.setRequestManager(requestManager);
   requestManager.setStorageManager(storageManager);
   requestManager.setCollectionManager(collectionManager);
   logger.info("[Extension] Managers connected to storage layer");
@@ -137,15 +138,16 @@ export async function activate(context: vscode.ExtensionContext) {
 
   vscode.window.showInformationMessage(MESSAGE.WELCOME_MESSAGE);
 
-  // Initialize collection tree view
+  // Collections are now shown in the webview sidebar tabs
+  // Keeping CollectionTreeProvider for potential future use, but not registering the tree view
   const collectionTreeProvider = new CollectionTreeProvider(collectionManager);
-  const collectionTreeView = vscode.window.createTreeView('opencall.collections', {
-    treeDataProvider: collectionTreeProvider,
-    showCollapseAll: true,
-    canSelectMany: false
-  });
-  context.subscriptions.push(collectionTreeView);
-  logger.info('[Extension] Collection tree view registered');
+  // const collectionTreeView = vscode.window.createTreeView('opencall.collections', {
+  //   treeDataProvider: collectionTreeProvider,
+  //   showCollapseAll: true,
+  //   canSelectMany: false
+  // });
+  // context.subscriptions.push(collectionTreeView);
+  logger.info('[Extension] Collection management integrated into webview sidebar');
 
   // Register webview view provider for sidebar
   context.subscriptions.push(
@@ -312,7 +314,14 @@ export async function activate(context: vscode.ExtensionContext) {
       });
       if (folderName) {
         await collectionHandler.handleCreateFolder(folderName, parentId);
-        collectionTreeProvider.refresh();
+        // Refresh sidebar collections
+        const collections = collectionManager.getAllCollections();
+        if (SidebarWebViewProvider.sidebarWebview) {
+          SidebarWebViewProvider.sidebarWebview.webview.postMessage({
+            messageCategory: CATEGORY.COLLECTION_DATA,
+            collections: collections,
+          });
+        }
       }
     }),
   );
@@ -324,7 +333,14 @@ export async function activate(context: vscode.ExtensionContext) {
       logger.info("[Extension] opencall.addRequestToCollection command triggered", item);
       const parentId = item?.item?.id;
       await requestHandler.handleCreateRequest(parentId);
-      collectionTreeProvider.refresh();
+      // Refresh sidebar collections
+      const collections = collectionManager.getAllCollections();
+      if (SidebarWebViewProvider.sidebarWebview) {
+        SidebarWebViewProvider.sidebarWebview.webview.postMessage({
+          messageCategory: CATEGORY.COLLECTION_DATA,
+          collections: collections,
+        });
+      }
     }),
   );
   logger.info("[Extension] Registered command: opencall.addRequestToCollection");
@@ -341,7 +357,14 @@ export async function activate(context: vscode.ExtensionContext) {
         });
         if (newName) {
           await collectionHandler.handleRenameCollection(itemId, newName);
-          collectionTreeProvider.refresh();
+          // Refresh sidebar collections
+          const collections = collectionManager.getAllCollections();
+          if (SidebarWebViewProvider.sidebarWebview) {
+            SidebarWebViewProvider.sidebarWebview.webview.postMessage({
+              messageCategory: CATEGORY.COLLECTION_DATA,
+              collections: collections,
+            });
+          }
         }
       }
     }),

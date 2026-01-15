@@ -55,7 +55,7 @@ const MetaDataContainer = styled.div<{ secondary: boolean }>`
 
   .metaDataColor {
     color: ${(props) =>
-      props.secondary ? "rgb(255 100 100)" : "rgb(66 245 66)"};
+      props.secondary ? "var(--vscode-errorForeground, #f48771)" : "var(--vscode-terminal-ansiGreen, #73c991)"};
     font-weight: 300;
   }
 `;

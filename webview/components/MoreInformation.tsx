@@ -32,7 +32,7 @@ const MoreInformationWrapper = styled.div`
   }
 
   .favorite {
-    fill: rgb(251 86 115);
+    fill: var(--vscode-errorForeground, #f48771);
   }
 `;
 

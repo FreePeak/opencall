@@ -146,6 +146,14 @@ export class StorageManager {
         collections.push(collection);
       }
 
+      // Test serialization to catch circular references early
+      try {
+        JSON.stringify(collections);
+      } catch (serializeError: any) {
+        logger.error(`[Storage] Circular reference detected in collection: ${collection.id}`, serializeError);
+        throw new Error(`Cannot save collection with circular reference: ${serializeError.message}`);
+      }
+
       await this.context.globalState.update(this.COLLECTIONS_KEY, collections);
       logger.info(`[Storage] Saved collection: ${collection.id}`);
     } catch (error) {

@@ -115,11 +115,6 @@
     "views": {
       "opencall": [
         {
-          "id": "opencall.collections",
-          "name": "Collections",
-          "contextualTitle": "OpenCall Collections"
-        },
-        {
           "type": "webview",
           "id": "opencall.collectionMenu",
           "name": "OpenCall API Client",

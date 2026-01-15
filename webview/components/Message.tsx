@@ -20,13 +20,13 @@ const MessageWrapper = styled.div<IMessageStyledProps>`
   }
 
   h3 {
-    color: rgb(255 100 100);
+    color: var(--vscode-errorForeground, #f48771);
     font-style: italic;
   }
 
   p {
     margin: 1rem 0;
-    opacity: 0.65;
+    opacity: 0.85;
     line-height: 1.1;
     text-align: center;
     line-height: 1.25;
@@ -37,7 +37,7 @@ const MessageWrapper = styled.div<IMessageStyledProps>`
     margin: 0 0.25rem;
     font-size: 1.25rem;
     font-weight: 400;
-    color: rgb(121 255 242);
+    color: var(--vscode-textLink-foreground, #3794ff);
     word-break: break-all;
     white-space: normal;
     line-height: 1.25;

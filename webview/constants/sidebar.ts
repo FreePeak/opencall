@@ -3,6 +3,7 @@ const SIDEBAR = {
   HISTORY: "History",
   START_APP: "Start App",
   FAVORITES: "Favorites",
+  COLLECTIONS: "Collections",
   COLLECTION_DATA: "Collection Data",
   ADD_TO_FAVORITES: "Add to favorites",
   DELETE_COMPLETE: "Deletion Complete",

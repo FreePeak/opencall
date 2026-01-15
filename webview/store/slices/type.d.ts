@@ -7,6 +7,7 @@ export interface ISidebarSlice extends ISidebarSliceList {
   handleUserFavoritesCollection: (
     favoritesData: IUserRequestSidebarState[],
   ) => void;
+  handleUserCollections: (collectionsData: any[]) => void;
   handleUserFavoriteIcon: (id: string, time: number | null) => void;
   handleUserDeleteIcon: (
     targetState: keyof ISidebarSliceList,
@@ -21,6 +22,7 @@ export interface ISidebarSlice extends ISidebarSliceList {
 export interface ISidebarSliceList {
   userFavorites: IUserRequestSidebarState[];
   userRequestHistory: IUserRequestSidebarState[];
+  userCollections: any[];
 }
 
 export interface IUserRequestSidebarState {

@@ -67,12 +67,12 @@ const SelectOptionWrapper = styled.select`
   height: 2.3rem;
   margin-left: 1rem;
   padding-left: 0.7rem;
-  border: 0.1rem solid rgba(255, 255, 255, 0.3);
+  border: 0.1rem solid var(--vscode-input-border, #808080);
   border-radius: 0.25rem;
   font-size: 1rem;
   font-weight: 500;
-  background-color: var(--vscode-editor-background);
-  color: rgba(255, 255, 255, 0.78);
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
 `;
 
 export default RequestBodyRawOptions;

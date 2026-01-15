@@ -10,7 +10,7 @@ import { CollectionManager } from "../core/collection-manager";
 import { EnvironmentManager } from "../core/environment-manager";
 
 class SidebarWebViewPanel {
-  private sidebarWebview: vscode.WebviewView | null = null;
+  public sidebarWebview: vscode.WebviewView | null = null;
   private extensionUri;
   public mainWebViewPanel: vscode.WebviewPanel | null = null;
   public stateManager;
@@ -47,9 +47,8 @@ class SidebarWebViewPanel {
       webviewView.webview,
     );
 
-    // ensure extension icon is available - if a panel needs it later
-    // (keeps behavior consistent with main panel)
-
+    // Send initial data with collections
+    const collections = this.collectionManager.getAllCollections();
     this.sidebarWebview.webview.postMessage({
       messageCategory: CATEGORY.COLLECTION_DATA,
       history: this.stateManager.getExtensionContext(
@@ -58,11 +57,13 @@ class SidebarWebViewPanel {
       favorites: this.stateManager.getExtensionContext(
         COLLECTION.FAVORITES_COLLECTION,
       ),
+      collections: collections,
     });
 
     console.log('Initial sidebar data sent:', {
       history: this.stateManager.getExtensionContext(COLLECTION.HISTORY_COLLECTION),
-      favorites: this.stateManager.getExtensionContext(COLLECTION.FAVORITES_COLLECTION)
+      favorites: this.stateManager.getExtensionContext(COLLECTION.FAVORITES_COLLECTION),
+      collections: collections
     });
 
     this.receiveSidebarWebViewMessage();
@@ -81,15 +82,20 @@ class SidebarWebViewPanel {
       return;
     }
 
+    // Get fresh collections data
+    const collections = this.collectionManager.getAllCollections();
+
     console.log('Updating sidebar with data:', {
       history: userHistoryData,
-      favorites: userFavoritesData
+      favorites: userFavoritesData,
+      collections: collections
     });
 
     this.sidebarWebview.webview.postMessage({
       messageCategory: CATEGORY.COLLECTION_DATA,
       history: userHistoryData,
       favorites: userFavoritesData,
+      collections: collections,
     });
   }
 

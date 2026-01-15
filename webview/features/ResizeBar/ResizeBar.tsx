@@ -84,7 +84,7 @@ const ResizeBarHitBox = styled.div`
     width: 100%;
     height: 0.25vh;
     text-align: center;
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--vscode-panel-border, #808080);
   }
 
   .expandIcon {

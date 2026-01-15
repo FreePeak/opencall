@@ -18,6 +18,7 @@ const SidebarMenu = () => {
     resetFavoriteIconState,
     handleUserHistoryCollection,
     handleUserFavoritesCollection,
+    handleUserCollections,
   } = useStore(
     (state) => ({
       sidebarOption: state.sidebarOption,
@@ -26,6 +27,7 @@ const SidebarMenu = () => {
       resetFavoriteIconState: state.resetFavoriteIconState,
       handleUserHistoryCollection: state.handleUserHistoryCollection,
       handleUserFavoritesCollection: state.handleUserFavoritesCollection,
+      handleUserCollections: state.handleUserCollections,
     }),
     shallow,
   );
@@ -41,12 +43,13 @@ const SidebarMenu = () => {
   useLayoutEffect(() => {
     window.addEventListener("message", (message) => {
       console.log('Sidebar received message:', message.data);
-      const { messageCategory, history, favorites, target } = message.data;
+      const { messageCategory, history, favorites, collections, target } = message.data;
 
       if (messageCategory === SIDEBAR.COLLECTION_DATA) {
-        console.log('Processing collection data:', { history, favorites });
+        console.log('Processing collection data:', { history, favorites, collections });
         handleUserHistoryCollection(history?.userRequestHistory);
         handleUserFavoritesCollection(favorites?.userRequestHistory);
+        handleUserCollections(collections || []);
       } else if (messageCategory === SIDEBAR.DELETE_COMPLETE) {
         deleteCollection(target);
         resetFavoriteIconState();
@@ -79,7 +82,7 @@ const SidebarMenuWrapper = styled.div`
   justify-content: center;
   margin-top: 2.5rem;
   padding-bottom: 0.7rem;
-  border-bottom: 0.07rem dashed #404040;
+  border-bottom: 0.07rem dashed var(--vscode-panel-border, #808080);
 
   h3 {
     font-size: 1.25rem;

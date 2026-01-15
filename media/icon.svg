@@ -1,24 +1,60 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Central node -->
-  <circle cx="12" cy="12" r="2.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#357ABD;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5FB3E8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4A90E2;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
   
-  <!-- Top node -->
-  <circle cx="12" cy="3" r="2"/>
-  <!-- Top connection -->
-  <line x1="12" y1="5" x2="12" y2="9.5"/>
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="56" fill="url(#primaryGradient)" filter="url(#shadow)"/>
   
-  <!-- Bottom node -->
-  <circle cx="12" cy="21" r="2"/>
-  <!-- Bottom connection -->
-  <line x1="12" y1="14.5" x2="12" y2="19"/>
+  <!-- Connection lines with glow effect -->
+  <g stroke="url(#accentGradient)" stroke-width="3" stroke-linecap="round" opacity="0.7">
+    <line x1="64" y1="32" x2="64" y2="52"/>
+    <line x1="64" y1="76" x2="64" y2="96"/>
+    <line x1="32" y1="64" x2="52" y2="64"/>
+    <line x1="76" y1="64" x2="96" y2="64"/>
+    <line x1="42" y1="42" x2="54" y2="54"/>
+    <line x1="74" y1="74" x2="86" y2="86"/>
+    <line x1="86" y1="42" x2="74" y2="54"/>
+    <line x1="54" y1="74" x2="42" y2="86"/>
+  </g>
   
-  <!-- Left node -->
-  <circle cx="3" cy="12" r="2"/>
-  <!-- Left connection -->
-  <line x1="5" y1="12" x2="9.5" y2="12"/>
+  <!-- Outer nodes -->
+  <g fill="white" filter="url(#shadow)">
+    <circle cx="64" cy="28" r="6"/>
+    <circle cx="64" cy="100" r="6"/>
+    <circle cx="28" cy="64" r="6"/>
+    <circle cx="100" cy="64" r="6"/>
+    <circle cx="38" cy="38" r="5"/>
+    <circle cx="90" cy="90" r="5"/>
+    <circle cx="90" cy="38" r="5"/>
+    <circle cx="38" cy="90" r="5"/>
+  </g>
   
-  <!-- Right node -->
-  <circle cx="21" cy="12" r="2"/>
-  <!-- Right connection -->
-  <line x1="14.5" y1="12" x2="19" y2="12"/>
+  <!-- Central hub with gradient -->
+  <circle cx="64" cy="64" r="12" fill="white" filter="url(#shadow)"/>
+  <circle cx="64" cy="64" r="9" fill="url(#accentGradient)"/>
+  
+  <!-- Inner accent dots -->
+  <g fill="white" opacity="0.9">
+    <circle cx="64" cy="60" r="1.5"/>
+    <circle cx="64" cy="68" r="1.5"/>
+  </g>
 </svg>

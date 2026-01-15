@@ -57,7 +57,7 @@ const OPTION = {
   READ_ONLY_TRUE_OPTION: { readOnly: true, lineNumbers: "on" },
   READ_ONLY_FALSE_OPTION: { readOnly: false, lineNumbers: "on" },
   LINE_NUMBER_OPTION: { readOnly: true, lineNumbers: "off" },
-  SIDEBAR_MENU_OPTIONS: ["History", "Favorites"],
+  SIDEBAR_MENU_OPTIONS: ["Collections", "History", "Favorites"],
   CODE_SNIPPET_OPTIONS: [
     {
       key: "c",

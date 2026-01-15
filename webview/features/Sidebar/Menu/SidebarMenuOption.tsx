@@ -12,6 +12,7 @@ const SidebarMenuOption = () => {
     userFavorites,
     sidebarOption,
     userRequestHistory,
+    userCollections,
     handleUserDeleteIcon,
     handleUserFavoriteIcon,
     addCollectionToFavorites,
@@ -21,6 +22,7 @@ const SidebarMenuOption = () => {
       sidebarOption: state.sidebarOption,
       userFavorites: state.userFavorites,
       userRequestHistory: state.userRequestHistory,
+      userCollections: state.userCollections,
       handleUserDeleteIcon: state.handleUserDeleteIcon,
       handleUserFavoriteIcon: state.handleUserFavoriteIcon,
       addCollectionToFavorites: state.addCollectionToFavorites,
@@ -111,6 +113,13 @@ const SidebarMenuOption = () => {
   };
 
   switch (sidebarOption) {
+    case SIDEBAR.COLLECTIONS:
+      return (
+        <SidebarCollection
+          userCollection={userCollections}
+          {...sidebarCollectionProps}
+        />
+      );
     case SIDEBAR.FAVORITES:
       return (
         <SidebarCollection
