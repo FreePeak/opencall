@@ -12,7 +12,7 @@ const sidebarSlice: StateCreator<ISidebarSlice, [], [], ISidebarSlice> = (
   userFavorites: [],
   userRequestHistory: [],
   userCollections: [],
-  sidebarOption: SIDEBAR.COLLECTIONS,
+  sidebarOption: SIDEBAR.HISTORY,
 
   handleSidebarOption: (option: string) =>
     set(() => ({ sidebarOption: option })),

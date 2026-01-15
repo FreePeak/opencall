@@ -4,13 +4,30 @@ A VSCode extension that provides comprehensive API testing capabilities with pee
 
 ## Features
 
-- **REST API Client**: Full HTTP client with all standard methods
-- **gRPC Client**: Native gRPC support with proto file parsing
-- **OpenAPI/Swagger**: Import and test OpenAPI specifications
-- **Request Collections**: Organize requests in collections and folders (Postman-like)
-- **Team Collaboration**: P2P synchronization with role-based access control
-- **Environment Variables**: Multiple environments with variable substitution
-- **Import/Export**: Postman v2.0/v2.1 and OpenAPI support
+### ✅ Working Features
+
+- **REST API Client**: Full HTTP client with GET/POST/PUT/PATCH/DELETE methods
+- **Request Collections**: Organize requests in collections with nested folders (Postman-like)
+- **Collection Tree View**: Sidebar tree view with icons for collections, folders, and requests
+- **Request History**: Automatic tracking of all sent requests
+- **Favorites**: Mark requests as favorites for quick access
+- **Environment Variables**: Multiple environments with variable substitution in requests
+- **Import Collections**: Postman v2.0/v2.1 with full auth, headers, body, scripts support
+- **Export Collections**: Export collections to OpenCall or Postman format
+- **Configuration Management**: Customizable timeout, proxy, SSL settings
+
+### ⚠️ Partially Implemented
+
+- **OpenAPI/Swagger**: Basic import structure exists (needs testing)
+
+### ❌ Not Yet Implemented
+
+- **gRPC Client**: Planned but not implemented
+- **Team Collaboration**: Type definitions only, no UI or storage integration
+- **P2P Synchronization**: Skeleton code only, no networking implementation
+- **GraphQL Support**: Not implemented
+- **Test Scripts**: Postman test scripts are imported but not executed
+- **Pre-request Scripts**: Scripts imported but not executed
 
 ---
 
