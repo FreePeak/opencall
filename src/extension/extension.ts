@@ -130,12 +130,6 @@ export async function activate(context: vscode.ExtensionContext) {
     });
   }
 
-  if (!StateManager.getExtensionContext(COLLECTION.FAVORITES_COLLECTION)) {
-    await StateManager.addExtensionContext(COLLECTION.FAVORITES_COLLECTION, {
-      history: [],
-    });
-  }
-
   vscode.window.showInformationMessage(MESSAGE.WELCOME_MESSAGE);
 
   // Collections are now shown in the webview sidebar tabs
