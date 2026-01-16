@@ -31,16 +31,6 @@ class ExtentionStateManager {
     await this.context.globalState.update(state, history);
   }
 
-  async updateExtensionContext(state: string, id: string, status?: string) {
-    const globalHistoryState: IUserRequestSidebarState[] | undefined =
-      this.context.globalState.get(state);
-
-    if (!globalHistoryState) return;
-
-    // No favorites update needed anymore
-    await this.context.globalState.update(state, [...globalHistoryState]);
-  }
-
   async deleteExtensionContext(targetExtensionContext: string, id?: string) {
     const targetGlobalState: IUserRequestSidebarState[] | undefined =
       this.context.globalState.get(targetExtensionContext);
